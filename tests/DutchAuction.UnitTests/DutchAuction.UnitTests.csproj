@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp1.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="4.1.0" />
+    <PackageReference Include="Lykke.AzureStorage" Version="1.2.22" />
+    <PackageReference Include="NUnit" Version="3.7.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DutchAuction.Core\DutchAuction.Core.csproj" />
+    <ProjectReference Include="..\..\src\DutchAuction.Repositories\DutchAuction.Repositories.csproj" />
+    <ProjectReference Include="..\..\src\DutchAuction.Services\DutchAuction.Services.csproj" />
+  </ItemGroup>
+
+</Project>
