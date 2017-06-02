@@ -11,6 +11,7 @@ namespace DutchAuction.Api
                 .UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseIISIntegration()
+                .UseUrls("http://*:5000")
                 .UseStartup<Startup>()
                 .UseApplicationInsights()
                 .Build();
