@@ -35,6 +35,13 @@
     <ProjectReference Include="..\DutchAuction.Repositories\DutchAuction.Repositories.csproj" />
     <ProjectReference Include="..\DutchAuction.Services\DutchAuction.Services.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Dockerfile">
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
+  
   <Target Name="PrepublishScript" BeforeTargets="PrepareForPublish">
     <ItemGroup>
       <DocFile Include="bin\*\*\DutchAuction.Api.xml" />
