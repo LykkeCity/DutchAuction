@@ -2,7 +2,7 @@
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using DutchAuction.Api.Modules;
-using DutchAuction.Core;
+using DutchAuction.Core.Settings;
 using Flurl.Http;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -52,12 +52,9 @@ namespace DutchAuction.Api
             });
 
             var builder = new ContainerBuilder();
+            var appSettings = Configuration["SettingsUrl"].GetJsonAsync<ApplicationSettings>().Result;
 
-            DutchAuctionSettings appSettings = Environment.IsDevelopment()
-                ? Configuration.Get<DutchAuctionSettings>()
-                : Configuration["SettingsUrl"].GetJsonAsync<DutchAuctionSettings>().Result;
-
-            builder.RegisterModule(new ApiModule(appSettings.DutchAuction));
+            builder.RegisterModule(new ApiModule(appSettings));
             builder.Populate(services);
 
             ApplicationContainer = builder.Build();

@@ -1,7 +1,9 @@
 ﻿using Autofac;
 using AzureStorage.Tables;
 using DutchAuction.Core;
+using DutchAuction.Core.Settings;
 using DutchAuction.Repositories;
+using DutchAuction.Repositories.Entities;
 using DutchAuction.Services;
 
 namespace DutchAuction.Api.Modules

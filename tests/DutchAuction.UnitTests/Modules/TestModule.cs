@@ -2,6 +2,7 @@
 using AzureStorage.Tables;
 using DutchAuction.Core;
 using DutchAuction.Repositories;
+using DutchAuction.Repositories.Entities;
 using DutchAuction.Services;
 
 namespace DutchAuction.UnitTests.Modules

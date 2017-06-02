@@ -1,14 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
-using Common;
 using DutchAuction.Api.Models;
 using DutchAuction.Core;
+using DutchAuction.Core.Settings;
 using DutchAuction.Services;
-using Microsoft.AspNetCore.Http.Authentication;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ViewFeatures;
 
 namespace DutchAuction.Api.Controllers
 {
@@ -51,7 +47,7 @@ namespace DutchAuction.Api.Controllers
                     $"{nameof(model.AssetId)} is required");
             }
 
-            if (!_settings.Assets.Contains(model.AssetId))
+            if (!_settings.DutchAuction.Assets.Contains(model.AssetId))
             {
                 return ResponseModel.CreateFail(ResponseModel.ErrorCodeType.InvalidInputField,
                     $"wrong {nameof(model.AssetId)}");

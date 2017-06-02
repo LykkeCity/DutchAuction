@@ -17,7 +17,7 @@ namespace DutchAuction.Services
 
         public Order[] GetOrderbook(string assetId = null)
         {
-            _lockSlim.EnterWriteLock();
+            _lockSlim.EnterReadLock();
 
             try
             {
@@ -43,7 +43,7 @@ namespace DutchAuction.Services
             }
             finally
             {
-                _lockSlim.ExitWriteLock();
+                _lockSlim.ExitReadLock();
             }
         }
 
