@@ -8,6 +8,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DutchAuction.Api.Controllers
 {
+    /// <summary>
+    /// Controller for lots
+    /// </summary>
     [Route("api/[controller]")]
     public class LotsController : Controller
     {
@@ -25,6 +28,11 @@ namespace DutchAuction.Api.Controllers
             _auctionLotManager = auctionLotManager;
         }
 
+        /// <summary>
+        /// Get order book by asset
+        /// </summary>
+        /// <param name="assetId">Asset ID (ÇHF, USD...)</param>
+        /// <returns></returns>
         [HttpGet]
         [Route("getOrderbook/{assetId?}")]
         public Order[] Get(string assetId)
@@ -32,8 +40,13 @@ namespace DutchAuction.Api.Controllers
             return _auctionLotCacheService.GetOrderbook(assetId);
         }
 
+        /// <summary>
+        /// Add auction lot
+        /// </summary>
+        /// <param name="model">Model</param>
+        /// <returns></returns>
         [HttpPost("add")]
-        public async Task<ResponseModel> AddLot([FromBody]AuctionLot model)
+        public async Task<ResponseModel> AddLot([FromBody]AuctionLotModel model)
         {
             if (string.IsNullOrEmpty(model.ClientId))
             {

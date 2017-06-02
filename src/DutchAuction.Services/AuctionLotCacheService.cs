@@ -21,25 +21,23 @@ namespace DutchAuction.Services
 
             try
             {
-                var orders = new List<Order>();
+                var query = _lots.AsEnumerable();
 
-                var prices = _lots.Select(item => item.Price).Distinct().OrderByDescending(item => item);
-
-                foreach (var price in prices)
+                if (!string.IsNullOrWhiteSpace(assetId))
                 {
-                    var lots = _lots.Where(item => item.Price == price).ToList();
-
-                    var order = new Order
-                    {
-                        Investors = lots.Select(item => item.ClientId).Distinct().Count(),
-                        Price = price,
-                        Volume = lots.Sum(item => item.Volume)
-                    };
-
-                    orders.Add(order);
+                    query = query.Where(item => item.AssetId == assetId);
                 }
 
-                return orders.ToArray();
+                return query
+                    .GroupBy(item => item.Price)
+                    .Select(group => new Order
+                    {
+                        Investors = group.Select(item => item.ClientId).Distinct().Count(),
+                        Price = group.Key,
+                        Volume = group.Sum(item => item.Volume)
+                    })
+                    .OrderByDescending(order => order.Price)
+                    .ToArray();
             }
             finally
             {

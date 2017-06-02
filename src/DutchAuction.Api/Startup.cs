@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using DutchAuction.Api.Modules;
@@ -9,6 +10,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.PlatformAbstractions;
 using Swashbuckle.Swagger.Model;
 
 namespace DutchAuction.Api
@@ -46,9 +48,16 @@ namespace DutchAuction.Api
                 options.SingleApiVersion(new Info
                 {
                     Version = "v1",
-                    Title = "Api"
+                    Title = "Dutch Auction API"
                 });
                 options.DescribeAllEnumsAsStrings();
+
+                //Determine base path for the application.
+                var basePath = PlatformServices.Default.Application.ApplicationBasePath;
+
+                //Set the comments path for the swagger json and ui.
+                var xmlPath = Path.Combine(basePath, "DutchAuction.Api.xml");
+                options.IncludeXmlComments(xmlPath);
             });
 
             var builder = new ContainerBuilder();
