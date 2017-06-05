@@ -1,17 +1,22 @@
 ﻿using Autofac;
 using DutchAuction.UnitTests.Modules;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace DutchAuction.UnitTests
 {
+    [TestClass]
     public class BaseTests
     {
-        protected IContainer Container { get; set; }
+        protected static IContainer Container { get; private set; }
 
-        protected void RegisterDependencies()
+        [AssemblyInitialize]
+        public static void AssemblyInitialize(TestContext context)
         {
             var builder = new ContainerBuilder();
 
             builder.RegisterModule(new TestModule());
+
+            Container = builder.Build();
         }
     }
 }

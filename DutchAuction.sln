@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26430.6
+VisualStudioVersion = 15.0.26430.12
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DutchAuction.Api", "src\DutchAuction.Api\DutchAuction.Api.csproj", "{B8A1769A-8253-4243-8B58-5D9440EA52E0}"
 EndProject
@@ -17,7 +17,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "2. Repositories", "2. Repos
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "3. Tests", "3. Tests", "{D872A210-0703-4347-81B3-9A4EF001E665}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DutchAuction.UnitTests", "tests\DutchAuction.UnitTests\DutchAuction.UnitTests.csproj", "{2FB68E6F-A8F7-467E-9D17-07C5319F0883}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DutchAuction.UnitTests", "tests\DutchAuction.UnitTests\DutchAuction.UnitTests.csproj", "{7697BBDA-02C8-46BD-B638-009393E4AC1E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -41,10 +41,10 @@ Global
 		{E9C626EB-B74E-4D00-BECF-21B25CA81283}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E9C626EB-B74E-4D00-BECF-21B25CA81283}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E9C626EB-B74E-4D00-BECF-21B25CA81283}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2FB68E6F-A8F7-467E-9D17-07C5319F0883}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2FB68E6F-A8F7-467E-9D17-07C5319F0883}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2FB68E6F-A8F7-467E-9D17-07C5319F0883}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2FB68E6F-A8F7-467E-9D17-07C5319F0883}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7697BBDA-02C8-46BD-B638-009393E4AC1E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7697BBDA-02C8-46BD-B638-009393E4AC1E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7697BBDA-02C8-46BD-B638-009393E4AC1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7697BBDA-02C8-46BD-B638-009393E4AC1E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -53,6 +53,6 @@ Global
 		{91E5565D-BA65-46E3-8307-A57D4C08EE03} = {B38EF260-6582-4764-971D-3C36F5BB47F5}
 		{2C5C86AD-BE9D-44D7-A46B-624456BEA131} = {0056407D-F0B1-403A-81F9-A89969339E5B}
 		{E9C626EB-B74E-4D00-BECF-21B25CA81283} = {B38EF260-6582-4764-971D-3C36F5BB47F5}
-		{2FB68E6F-A8F7-467E-9D17-07C5319F0883} = {D872A210-0703-4347-81B3-9A4EF001E665}
+		{7697BBDA-02C8-46BD-B638-009393E4AC1E} = {D872A210-0703-4347-81B3-9A4EF001E665}
 	EndGlobalSection
 EndGlobal

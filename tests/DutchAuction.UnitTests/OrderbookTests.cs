@@ -1,27 +1,26 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
 using Autofac;
-using DutchAuction.Core;
+using DutchAuction.Core.Services;
 using DutchAuction.Services;
-using NUnit.Framework;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace DutchAuction.UnitTests
 {
-    [TestFixture]
+    [TestClass]
     public class OrderbookTests : BaseTests
     {
         private IAuctionLotCacheService _auctionLotCacheService;
         private AuctionLotManager _auctionLotManager;
 
-        [OneTimeSetUp]
-        public void SetUp()
+        [TestInitialize]
+        public void InitializeTest()
         {
-            RegisterDependencies();
             _auctionLotCacheService = Container.Resolve<IAuctionLotCacheService>();
             _auctionLotManager = Container.Resolve<AuctionLotManager>();
         }
 
-        [Test]
+        [TestMethod]
         public async Task Is_Orderbook_Correct()
         {
             await _auctionLotManager.AddAsync("client1", "USD", 100, 50);
