@@ -1,4 +1,4 @@
-namespace DutchAuction.Core.Settings
+namespace DutchAuction.Core.Domain
 {
     public class ApplicationSettings
     {

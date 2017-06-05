@@ -3,7 +3,7 @@ using System.IO;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using DutchAuction.Api.Modules;
-using DutchAuction.Core.Settings;
+using DutchAuction.Core.Domain;
 using Flurl.Http;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;

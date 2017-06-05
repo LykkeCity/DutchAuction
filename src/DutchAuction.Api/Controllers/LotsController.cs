@@ -1,8 +1,8 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
 using DutchAuction.Api.Models;
-using DutchAuction.Core;
-using DutchAuction.Core.Settings;
+using DutchAuction.Core.Domain;
+using DutchAuction.Core.Services;
 using DutchAuction.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -31,13 +31,12 @@ namespace DutchAuction.Api.Controllers
         /// <summary>
         /// Get order book by asset
         /// </summary>
-        /// <param name="assetId">Asset ID (ÇHF, USD...)</param>
         /// <returns></returns>
         [HttpGet]
-        [Route("getOrderbook/{assetId?}")]
-        public Order[] Get(string assetId)
+        [Route("orderbook")]
+        public Order[] Get()
         {
-            return _auctionLotCacheService.GetOrderbook(assetId);
+            return _auctionLotCacheService.GetOrderbook();
         }
 
         /// <summary>

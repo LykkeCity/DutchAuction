@@ -1,11 +1,12 @@
 ﻿using System.Collections.Generic;
+using DutchAuction.Core.Domain;
 
-namespace DutchAuction.Core
+namespace DutchAuction.Core.Services
 {
     public interface IAuctionLotCacheService
     {
         IAuctionLot[] GetAllAsync();
-        Order[] GetOrderbook(string assetId = null);
+        Order[] GetOrderbook();
         void InitCache(List<IAuctionLot> lots);
         void Add(IAuctionLot lot);
     }

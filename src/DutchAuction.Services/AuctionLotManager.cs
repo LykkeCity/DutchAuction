@@ -1,8 +1,9 @@
 ﻿using System.Linq;
 using Autofac;
-using DutchAuction.Core;
 using System;
 using System.Threading.Tasks;
+using DutchAuction.Core.Domain;
+using DutchAuction.Core.Services;
 
 namespace DutchAuction.Services
 {

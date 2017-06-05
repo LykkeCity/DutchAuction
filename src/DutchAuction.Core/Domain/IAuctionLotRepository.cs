@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace DutchAuction.Core
+namespace DutchAuction.Core.Domain
 {
     public interface IAuctionLotRepository
     {

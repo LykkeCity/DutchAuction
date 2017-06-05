@@ -1,6 +1,6 @@
 using System;
 using System.Globalization;
-using DutchAuction.Core;
+using DutchAuction.Core.Domain;
 using Microsoft.WindowsAzure.Storage.Table;
 
 namespace DutchAuction.Repositories.Entities

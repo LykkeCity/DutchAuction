@@ -1,7 +1,7 @@
 ﻿using Autofac;
 using AzureStorage.Tables;
-using DutchAuction.Core;
-using DutchAuction.Core.Settings;
+using DutchAuction.Core.Domain;
+using DutchAuction.Core.Services;
 using DutchAuction.Repositories;
 using DutchAuction.Repositories.Entities;
 using DutchAuction.Services;

@@ -2,6 +2,8 @@
 using System.Linq;
 using System.Threading;
 using DutchAuction.Core;
+using DutchAuction.Core.Domain;
+using DutchAuction.Core.Services;
 
 namespace DutchAuction.Services
 {
@@ -15,20 +17,13 @@ namespace DutchAuction.Services
             _lockSlim?.Dispose();
         }
 
-        public Order[] GetOrderbook(string assetId = null)
+        public Order[] GetOrderbook()
         {
             _lockSlim.EnterReadLock();
 
             try
             {
-                var query = _lots.AsEnumerable();
-
-                if (!string.IsNullOrWhiteSpace(assetId))
-                {
-                    query = query.Where(item => item.AssetId == assetId);
-                }
-
-                return query
+                return _lots
                     .GroupBy(item => item.Price)
                     .Select(group => new Order
                     {
