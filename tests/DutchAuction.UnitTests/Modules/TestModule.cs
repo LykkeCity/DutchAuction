@@ -1,10 +1,10 @@
 ﻿using Autofac;
 using AzureStorage.Tables;
 using DutchAuction.Core.Domain;
-using DutchAuction.Core.Services;
+using DutchAuction.Core.Services.Lots;
 using DutchAuction.Repositories;
 using DutchAuction.Repositories.Entities;
-using DutchAuction.Services;
+using DutchAuction.Services.Lots;
 
 namespace DutchAuction.UnitTests.Modules
 {

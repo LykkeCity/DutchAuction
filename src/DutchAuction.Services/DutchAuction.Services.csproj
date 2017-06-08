@@ -1,11 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard1.6</TargetFramework>
+    <TargetFramework>netcoreapp1.1</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="4.1.0" />
+    <PackageReference Include="Autofac" Version="4.2.0" />
+    <PackageReference Include="Lykke.Domain.Prices" Version="0.9.0" />
+    <PackageReference Include="Lykke.MarketProfileService.Client" Version="1.0.0" />
   </ItemGroup>
 
   <ItemGroup>

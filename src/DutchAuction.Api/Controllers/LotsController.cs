@@ -1,9 +1,8 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
 using DutchAuction.Api.Models;
-using DutchAuction.Core.Domain;
-using DutchAuction.Core.Services;
-using DutchAuction.Services;
+using DutchAuction.Core;
+using DutchAuction.Core.Services.Lots;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DutchAuction.Api.Controllers
@@ -14,17 +13,14 @@ namespace DutchAuction.Api.Controllers
     [Route("api/[controller]")]
     public class LotsController : Controller
     {
-        private readonly ApplicationSettings _settings;
-        private readonly IAuctionLotCacheService _auctionLotCacheService;
-        private readonly AuctionLotManager _auctionLotManager;
+        private readonly ApplicationSettings.DutchAuctionSettings _settings;
+        private readonly IAuctionLotManager _auctionLotManager;
 
         public LotsController(
-            ApplicationSettings settings,
-            IAuctionLotCacheService auctionLotCacheService,
-            AuctionLotManager auctionLotManager)
+            ApplicationSettings.DutchAuctionSettings settings,
+            IAuctionLotManager auctionLotManager)
         {
             _settings = settings;
-            _auctionLotCacheService = auctionLotCacheService;
             _auctionLotManager = auctionLotManager;
         }
 
@@ -36,7 +32,7 @@ namespace DutchAuction.Api.Controllers
         [Route("orderbook")]
         public Order[] Get()
         {
-            return _auctionLotCacheService.GetOrderbook();
+            return _auctionLotManager.GetOrderbook();
         }
 
         /// <summary>
@@ -59,7 +55,7 @@ namespace DutchAuction.Api.Controllers
                     $"{nameof(model.AssetId)} is required");
             }
 
-            if (!_settings.DutchAuction.Assets.Contains(model.AssetId))
+            if (!_settings.Assets.Contains(model.AssetId))
             {
                 return ResponseModel.CreateFail(ResponseModel.ErrorCodeType.InvalidInputField,
                     $"wrong {nameof(model.AssetId)}");
