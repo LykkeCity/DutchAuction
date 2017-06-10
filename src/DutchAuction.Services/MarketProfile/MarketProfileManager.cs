@@ -32,9 +32,9 @@ namespace DutchAuction.Services.MarketProfile
 
         public AssetPairModel TryGetPair(string baseAssetId, string targetAssetId)
         {
-            var pairCode = string.Concat(baseAssetId, targetAssetId);
+            var assetPairId = string.Concat(baseAssetId, targetAssetId);
 
-            return _cache.TryGetPair(pairCode);
+            return _cache.TryGetPair(assetPairId);
         }
 
         private async Task UpdateCache()

@@ -1,9 +1,9 @@
 using System;
 using System.Globalization;
-using DutchAuction.Core.Domain;
+using DutchAuction.Core.Domain.Lots;
 using Microsoft.WindowsAzure.Storage.Table;
 
-namespace DutchAuction.Repositories.Entities
+namespace DutchAuction.Repositories.Lots
 {
     public class AuctionLotEntity : TableEntity, IAuctionLot
     {

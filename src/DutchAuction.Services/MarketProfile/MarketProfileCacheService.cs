@@ -14,9 +14,9 @@ namespace DutchAuction.Services.MarketProfile
             _pairs = pairs.ToDictionary(p => p.AssetPair, p => p);
         }
 
-        public AssetPairModel TryGetPair(string pairCode)
+        public AssetPairModel TryGetPair(string assetPairId)
         {
-            _pairs.TryGetValue(pairCode, out AssetPairModel pair);
+            _pairs.TryGetValue(assetPairId, out AssetPairModel pair);
 
             return pair;
         }

@@ -6,6 +6,6 @@ namespace DutchAuction.Core.Services.MarketProfile
     public interface IMarketProfileCacheService
     {
         void Update(IEnumerable<AssetPairModel> pairs);
-        AssetPairModel TryGetPair(string pairCode);
+        AssetPairModel TryGetPair(string assetPairId);
     }
 }

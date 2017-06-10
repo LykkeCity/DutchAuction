@@ -11,11 +11,13 @@ namespace DutchAuction.Core
             public DatabaseSettings Db { get; set; }
             public string[] Assets { get; set; }
             public MarketProfileSettings MarketProfile { get; set; }
+            public DictionariesSettings Dictionaries { get; set; }
         }
 
         public class DatabaseSettings
         {
             public string DataConnectionString { get; set; }
+            public string DictionariesConnectionString { get; set; }
         }
 
         public class MarketProfileSettings
@@ -23,7 +25,10 @@ namespace DutchAuction.Core
             public Uri ServiceUri { get; set; }
             public TimeSpan CacheUpdatePeriod { get; set; }
         }
-    }
 
-    
+        public class DictionariesSettings
+        {
+            public TimeSpan CacheUpdatePeriod { get; set; }
+        }
+    }
 }

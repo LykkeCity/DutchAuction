@@ -2,10 +2,9 @@
 using System.Linq;
 using System.Threading.Tasks;
 using AzureStorage;
-using DutchAuction.Core.Domain;
-using DutchAuction.Repositories.Entities;
+using DutchAuction.Core.Domain.Lots;
 
-namespace DutchAuction.Repositories
+namespace DutchAuction.Repositories.Lots
 {
     public class AuctionLotRepository : IAuctionLotRepository
     {

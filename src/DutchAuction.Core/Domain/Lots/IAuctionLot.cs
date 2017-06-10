@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace DutchAuction.Core.Domain
+namespace DutchAuction.Core.Domain.Lots
 {
     public interface IAuctionLot
     {

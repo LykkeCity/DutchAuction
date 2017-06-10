@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
-using DutchAuction.Core.Domain;
+using DutchAuction.Core.Domain.Lots;
 using DutchAuction.Core.Services.Lots;
 
 namespace DutchAuction.Services.Lots

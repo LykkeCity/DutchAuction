@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
-using DutchAuction.Core.Domain;
+using DutchAuction.Core.Domain.Lots;
 using DutchAuction.Core.Services.Assets;
 using DutchAuction.Core.Services.Lots;
 

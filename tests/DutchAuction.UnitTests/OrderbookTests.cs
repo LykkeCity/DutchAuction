@@ -1,21 +1,36 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
-using Autofac;
+using AzureStorage.Tables;
+using DutchAuction.Core.Services.Assets;
+using DutchAuction.Repositories.Lots;
 using DutchAuction.Services.Lots;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 
 namespace DutchAuction.UnitTests
 {
 
     [TestClass]
-    public class OrderbookTests : BaseTests
+    public class OrderbookTests
     {
         private AuctionLotManager _auctionLotManager;
 
         [TestInitialize]
         public void InitializeTest()
         {
-            _auctionLotManager = Container.Resolve<AuctionLotManager>();
+            var assetExchangeServiceMock = new Mock<IAssetExchangeService>();
+
+            assetExchangeServiceMock
+                .Setup(s => s.Exchange(
+                    It.IsAny<double>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>()))
+                .Returns<double, string, string>((amount, baseAssetId, targetAssetId) => amount);
+
+            _auctionLotManager = new AuctionLotManager(
+                new AuctionLotRepository(new NoSqlTableInMemory<AuctionLotEntity>()),
+                new AuctionLotCacheService(),
+                assetExchangeServiceMock.Object);
         }
 
         [TestMethod]

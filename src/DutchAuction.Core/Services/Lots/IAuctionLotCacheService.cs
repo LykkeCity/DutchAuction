@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using DutchAuction.Core.Domain;
+using DutchAuction.Core.Domain.Lots;
 
 namespace DutchAuction.Core.Services.Lots
 {
