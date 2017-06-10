@@ -18,14 +18,14 @@ namespace DutchAuction.Services.Assets
 
             if (directPair != null)
             {
-                return baseAmount * directPair.AskPrice ?? 0;
+                return baseAmount * directPair.AskPrice;
             }
 
             var invertedPair = _marketProfileManager.TryGetPair(targetAssetId, baseAssetId);
 
             if (invertedPair != null)
             {
-                return baseAmount / invertedPair.BidPrice ?? 0;
+                return baseAmount / invertedPair.BidPrice;
             }
 
             // TODO: throw?

@@ -20,7 +20,7 @@ namespace DutchAuction.Api.Controllers
             return new IsAliveResponse
             {
                 Version = PlatformServices.Default.Application.ApplicationVersion,
-                Env = Environment.GetEnvironmentVariable("Env")
+                Env = Environment.GetEnvironmentVariable("ENV_INFO")
             };
         }
     }
