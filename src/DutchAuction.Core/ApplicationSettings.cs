@@ -5,6 +5,7 @@ namespace DutchAuction.Core
     public class ApplicationSettings
     {
         public DutchAuctionSettings DutchAuction { get; set; }
+        public SlackNotificationsSettings SlackNotifications { get; set; }
 
         public class DutchAuctionSettings
         {
@@ -18,6 +19,7 @@ namespace DutchAuction.Core
         {
             public string DataConnectionString { get; set; }
             public string DictionariesConnectionString { get; set; }
+            public string LogsConnectionString { get; set; }
         }
 
         public class MarketProfileSettings
@@ -29,6 +31,20 @@ namespace DutchAuction.Core
         public class DictionariesSettings
         {
             public TimeSpan CacheUpdatePeriod { get; set; }
+        }
+
+        public class SlackNotificationsSettings
+        {
+            public AzureQueueSettings AzureQueue { get; set; }
+
+            public int ThrottlingLimitSeconds { get; set; }
+        }
+
+        public class AzureQueueSettings
+        {
+            public string ConnectionString { get; set; }
+
+            public string QueueName { get; set; }
         }
     }
 }

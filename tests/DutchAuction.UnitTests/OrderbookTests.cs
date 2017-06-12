@@ -1,6 +1,6 @@
 ﻿using System.Linq;
-using System.Threading.Tasks;
 using AzureStorage.Tables;
+using Common.Log;
 using DutchAuction.Core.Services.Assets;
 using DutchAuction.Repositories.Lots;
 using DutchAuction.Services.Lots;
@@ -27,20 +27,23 @@ namespace DutchAuction.UnitTests
                     It.IsAny<string>()))
                 .Returns<double, string, string>((amount, baseAssetId, targetAssetId) => amount);
 
+            var logMock = new Mock<ILog>();
+
             _auctionLotManager = new AuctionLotManager(
                 new AuctionLotRepository(new NoSqlTableInMemory<AuctionLotEntity>()),
                 new AuctionLotCacheService(),
-                assetExchangeServiceMock.Object);
+                assetExchangeServiceMock.Object,
+                logMock.Object);
         }
 
         [TestMethod]
-        public async Task Is_Orderbook_Correct()
+        public void Is_Orderbook_Correct()
         {
             // Asset
-            await _auctionLotManager.AddAsync("client1", "USD", 100, 50);
-            await _auctionLotManager.AddAsync("client1", "USD", 50, 100);
-            await _auctionLotManager.AddAsync("client2", "USD", 1000, 5);
-            await _auctionLotManager.AddAsync("client2", "USD", 100, 10);
+            _auctionLotManager.Add("client1", "USD", 100, 50);
+            _auctionLotManager.Add("client1", "USD", 50, 100);
+            _auctionLotManager.Add("client2", "USD", 1000, 5);
+            _auctionLotManager.Add("client2", "USD", 100, 10);
 
             // Act
             var orderbook = _auctionLotManager.GetOrderbook();

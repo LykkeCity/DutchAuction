@@ -41,40 +41,39 @@ namespace DutchAuction.Api.Controllers
         /// <param name="model">Model</param>
         /// <returns></returns>
         [HttpPost("add")]
-        public async Task<ResponseModel> AddLot([FromBody]AuctionLotModel model)
+        public ResponseModel AddLot([FromBody]AuctionLotModel model)
         {
             if (string.IsNullOrEmpty(model.ClientId))
             {
-                return ResponseModel.CreateFail(ResponseModel.ErrorCodeType.InvalidInputField,
+                return ResponseModel.CreateFail(ResponseModel.ErrorCode.InvalidInputField,
                     $"{nameof(model.ClientId)} is required");
             }
 
             if (string.IsNullOrEmpty(model.AssetId))
             {
-                return ResponseModel.CreateFail(ResponseModel.ErrorCodeType.InvalidInputField,
+                return ResponseModel.CreateFail(ResponseModel.ErrorCode.InvalidInputField,
                     $"{nameof(model.AssetId)} is required");
             }
 
             if (!_settings.Assets.Contains(model.AssetId))
             {
-                return ResponseModel.CreateFail(ResponseModel.ErrorCodeType.InvalidInputField,
+                return ResponseModel.CreateFail(ResponseModel.ErrorCode.InvalidInputField,
                     $"wrong {nameof(model.AssetId)}");
             }
 
             if (model.Price <= 0)
             {
-                return ResponseModel.CreateFail(ResponseModel.ErrorCodeType.InvalidInputField,
+                return ResponseModel.CreateFail(ResponseModel.ErrorCode.InvalidInputField,
                     $"wrong {nameof(model.Price)}");
             }
 
             if (model.Volume <= 0)
             {
-                return ResponseModel.CreateFail(ResponseModel.ErrorCodeType.InvalidInputField,
+                return ResponseModel.CreateFail(ResponseModel.ErrorCode.InvalidInputField,
                     $"wrong {nameof(model.Volume)}");
             }
 
-            //TODO: validate model.ClientId
-            await _auctionLotManager.AddAsync(model.ClientId, model.AssetId, model.Price, model.Volume);
+            _auctionLotManager.Add(model.ClientId, model.AssetId, model.Price, model.Volume);
 
             return ResponseModel.CreateOk();
         }

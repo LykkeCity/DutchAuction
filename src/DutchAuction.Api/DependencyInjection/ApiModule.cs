@@ -1,13 +1,12 @@
 ﻿using Autofac;
 using AzureStorage.Tables;
+using Common.Log;
 using DutchAuction.Core;
-using DutchAuction.Core.Domain;
 using DutchAuction.Core.Domain.Asset;
 using DutchAuction.Core.Domain.Lots;
 using DutchAuction.Core.Services.Assets;
 using DutchAuction.Core.Services.Lots;
 using DutchAuction.Core.Services.MarketProfile;
-using DutchAuction.Repositories;
 using DutchAuction.Repositories.Assets;
 using DutchAuction.Repositories.Lots;
 using DutchAuction.Services.Assets;
@@ -15,21 +14,24 @@ using DutchAuction.Services.Lots;
 using DutchAuction.Services.MarketProfile;
 using Lykke.MarketProfileService.Client;
 
-namespace DutchAuction.Api.Modules
+namespace DutchAuction.Api.DependencyInjection
 {
     public class ApiModule : Module
     {
         private readonly ApplicationSettings.DutchAuctionSettings _settings;
+        private readonly ILog _log;
 
-        public ApiModule(ApplicationSettings.DutchAuctionSettings settings)
+        public ApiModule(ApplicationSettings.DutchAuctionSettings settings, ILog log)
         {
             _settings = settings;
+            _log = log;
         }
 
         protected override void Load(ContainerBuilder builder)
         {
-            builder.RegisterInstance(_settings)
-                .SingleInstance();
+            builder.RegisterInstance(_log).SingleInstance();
+
+            builder.RegisterInstance(_settings).SingleInstance();
 
             builder
                 .Register<IAuctionLotRepository>(
@@ -55,7 +57,7 @@ namespace DutchAuction.Api.Modules
             builder.Register(x => new MarketProfileManager(
                     new LykkeMarketProfileServiceAPI(_settings.MarketProfile.ServiceUri), 
                     new MarketProfileCacheService(),
-                    _settings.MarketProfile.CacheUpdatePeriod))
+                    _settings.MarketProfile.CacheUpdatePeriod, _log))
                 .As<IMarketProfileManager>()
                 .As<IStartable>()
                 .SingleInstance();
@@ -63,7 +65,7 @@ namespace DutchAuction.Api.Modules
             builder.Register(x => new AssetPairsManager(
                     x.Resolve<IAssetPairsRepository>(),
                     new AssetPairsCacheService(),
-                    _settings.Dictionaries.CacheUpdatePeriod))
+                    _settings.Dictionaries.CacheUpdatePeriod, _log))
                 .As<IAssetPairsManager>()
                 .As<IStartable>()
                 .SingleInstance();

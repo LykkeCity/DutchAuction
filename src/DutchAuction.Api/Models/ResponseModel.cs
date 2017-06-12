@@ -8,12 +8,14 @@
         /// <summary>
         /// Types of error
         /// </summary>
-        public enum ErrorCodeType
+        public enum ErrorCode
         {
             /// <summary>
             /// Input field is invalid
             /// </summary>
-            InvalidInputField = 0
+            InvalidInputField = 0,
+
+            RuntimeError
         }
 
         /// <summary>
@@ -24,7 +26,7 @@
             /// <summary>
             /// Type of error
             /// </summary>
-            public ErrorCodeType Code { get; set; }
+            public ErrorCode Code { get; set; }
             /// <summary>
             /// Associated field
             /// </summary>
@@ -46,20 +48,20 @@
             {
                 Error = new ErrorModel
                 {
-                    Code = ErrorCodeType.InvalidInputField,
+                    Code = ErrorCode.InvalidInputField,
                     Field = field,
                     Message = message
                 }
             };
         }
 
-        public static ResponseModel CreateFail(ErrorCodeType errorCodeType, string message)
+        public static ResponseModel CreateFail(ErrorCode errorCode, string message)
         {
             return new ResponseModel
             {
                 Error = new ErrorModel
                 {
-                    Code = errorCodeType,
+                    Code = errorCode,
                     Message = message
                 }
             };
@@ -97,20 +99,20 @@
             {
                 Error = new ErrorModel
                 {
-                    Code = ErrorCodeType.InvalidInputField,
+                    Code = ErrorCode.InvalidInputField,
                     Field = field,
                     Message = message
                 }
             };
         }
 
-        public new static ResponseModel<T> CreateFail(ErrorCodeType errorCodeType, string message)
+        public new static ResponseModel<T> CreateFail(ErrorCode errorCode, string message)
         {
             return new ResponseModel<T>
             {
                 Error = new ErrorModel
                 {
-                    Code = errorCodeType,
+                    Code = errorCode,
                     Message = message
                 }
             };

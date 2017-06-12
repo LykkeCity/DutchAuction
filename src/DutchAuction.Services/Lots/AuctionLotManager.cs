@@ -1,6 +1,11 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Linq;
+using System.Reflection.Metadata;
+using System.Threading;
 using System.Threading.Tasks;
+using Common.Log;
+using DutchAuction.Core;
 using DutchAuction.Core.Domain.Lots;
 using DutchAuction.Core.Services.Assets;
 using DutchAuction.Core.Services.Lots;
@@ -8,28 +13,49 @@ using DutchAuction.Core.Services.Lots;
 namespace DutchAuction.Services.Lots
 {
     public class AuctionLotManager :
-        IAuctionLotManager
+        IAuctionLotManager,
+        IDisposable
     {
         private readonly IAuctionLotRepository _repository;
         private readonly IAuctionLotCacheService _cacheService;
         private readonly IAssetExchangeService _assetrExchangeService;
+        private readonly ConcurrentQueue<AuctionLot> _persistQueue;
+        private readonly ILog _log;
+
+        private CancellationTokenSource _persistQueuePumpingCancellationTokenSource;
 
         public AuctionLotManager(
             IAuctionLotRepository auctionLotRepository,
             IAuctionLotCacheService cacheService,
-            IAssetExchangeService assetrExchangeService)
+            IAssetExchangeService assetrExchangeService, 
+            ILog log)
         {
             _repository = auctionLotRepository;
             _cacheService = cacheService;
             _assetrExchangeService = assetrExchangeService;
+            _log = log;
+
+            _persistQueue = new ConcurrentQueue<AuctionLot>();
         }
 
         public void Start()
         {
-            UpdateCache().Wait();
+            try
+            {
+                UpdateCache().Wait();
+
+                _persistQueuePumpingCancellationTokenSource = new CancellationTokenSource();
+                Task.Factory.StartNew(async () => await PumpPersistQueueAsync(),
+                    _persistQueuePumpingCancellationTokenSource.Token);
+            }
+            catch (Exception ex)
+            {
+                _log.WriteErrorAsync(Constants.ComponentName, null, null, ex).Wait();
+                throw;
+            }
         }
 
-        public async Task AddAsync(string clientId, string assetId, double price, double volume)
+        public void Add(string clientId, string assetId, double price, double volume)
         {
             var lot = new AuctionLot
             {
@@ -39,9 +65,9 @@ namespace DutchAuction.Services.Lots
                 Price = price,
                 Volume = volume
             };
-
-            await _repository.AddAsync(lot);
+            
             _cacheService.Add(lot);
+            _persistQueue.Enqueue(lot);
         }
 
         public Order[] GetOrderbook()
@@ -65,10 +91,51 @@ namespace DutchAuction.Services.Lots
                 .ToArray();
         }
 
+        private async Task PumpPersistQueueAsync()
+        {
+            while (!_persistQueuePumpingCancellationTokenSource.IsCancellationRequested)
+            {
+                try
+                {
+                    AuctionLot lot;
+
+                    if (_persistQueue.TryPeek(out lot))
+                    {
+                        await _repository.AddAsync(lot);
+                    }
+
+                    _persistQueue.TryDequeue(out lot);
+                }
+                catch(Exception ex)
+                {
+                    try
+                    {
+                        await _log.WriteErrorAsync(Constants.ComponentName, null, null, ex);
+                    }
+                    // ReSharper disable once EmptyGeneralCatchClause
+                    catch
+                    {
+                    }
+                }
+
+                Thread.Sleep(1);
+            }
+        }
+
         private async Task UpdateCache()
         {
             var lots = await _repository.GetAllAsync();
+
             _cacheService.InitCache(lots.ToList());
+        }
+
+        public void Dispose()
+        {
+            if (_persistQueuePumpingCancellationTokenSource != null)
+            {
+                _persistQueuePumpingCancellationTokenSource.Cancel();
+                _persistQueuePumpingCancellationTokenSource.Dispose();
+            }
         }
     }
 }

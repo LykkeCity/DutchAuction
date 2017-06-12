@@ -2,9 +2,15 @@
 using System.IO;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
-using DutchAuction.Api.Modules;
+using AzureStorage.Tables;
+using Common.Log;
+using DutchAuction.Api.DependencyInjection;
+using DutchAuction.Api.Middleware;
 using DutchAuction.Core;
 using Flurl.Http;
+using Lykke.AzureQueueIntegration;
+using Lykke.Logs;
+using Lykke.SlackNotification.AzureQueue;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -37,6 +43,8 @@ namespace DutchAuction.Api
         // This method gets called by the runtime. Use this method to add services to the container.
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
+            ILog log = new LogToConsole();
+
             services.AddMvc()
                 .AddJsonOptions(options =>
                 {
@@ -60,11 +68,26 @@ namespace DutchAuction.Api
                 options.IncludeXmlComments(xmlPath);
             });
 
-            var builder = new ContainerBuilder();
             var settings = Configuration["SettingsUrl"].GetJsonAsync<ApplicationSettings>().Result;
             var appSettings = settings.DutchAuction;
 
-            builder.RegisterModule(new ApiModule(appSettings));
+            var slackService = services.UseSlackNotificationsSenderViaAzureQueue(new AzureQueueSettings
+            {
+                ConnectionString = settings.SlackNotifications.AzureQueue.ConnectionString,
+                QueueName = settings.SlackNotifications.AzureQueue.QueueName
+            }, log);
+
+            if (!string.IsNullOrEmpty(appSettings.Db.LogsConnectionString) &&
+                !(appSettings.Db.LogsConnectionString.StartsWith("${") && appSettings.Db.LogsConnectionString.EndsWith("}")))
+            {
+                log = new LykkeLogToAzureStorage("Lykke.DutchAuction", new AzureTableStorage<LogEntity>(
+                    appSettings.Db.LogsConnectionString, "DutchAuctionLogs", log), slackService);
+            }
+
+            var builder = new ContainerBuilder();
+            
+
+            builder.RegisterModule(new ApiModule(appSettings, log));
             builder.Populate(services);
 
             ApplicationContainer = builder.Build();
@@ -77,6 +100,8 @@ namespace DutchAuction.Api
         {
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
             loggerFactory.AddDebug();
+
+            app.UseMiddleware<GlobalErrorHandlerMiddleware>();
 
             app.UseMvc();
             app.UseSwagger();
