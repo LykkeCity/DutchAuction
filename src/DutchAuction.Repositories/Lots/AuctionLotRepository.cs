@@ -17,7 +17,9 @@ namespace DutchAuction.Repositories.Lots
 
         public async Task AddAsync(IAuctionLot lot)
         {
-            await _tableStorage.InsertOrReplaceAsync(AuctionLotEntity.Create(lot));
+            var entity = AuctionLotEntity.Create(lot);
+
+            await _tableStorage.InsertAsync(entity);
         }
 
         public async Task<IEnumerable<IAuctionLot>> GetAllAsync()

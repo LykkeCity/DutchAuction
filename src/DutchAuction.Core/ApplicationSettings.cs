@@ -24,7 +24,7 @@ namespace DutchAuction.Core
 
         public class MarketProfileSettings
         {
-            public Uri ServiceUri { get; set; }
+            public string ServiceUri { get; set; }
             public TimeSpan CacheUpdatePeriod { get; set; }
         }
 

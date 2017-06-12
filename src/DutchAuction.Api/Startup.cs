@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Net.Http;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using AzureStorage.Tables;
@@ -7,9 +8,9 @@ using Common.Log;
 using DutchAuction.Api.DependencyInjection;
 using DutchAuction.Api.Middleware;
 using DutchAuction.Core;
-using Flurl.Http;
 using Lykke.AzureQueueIntegration;
 using Lykke.Logs;
+using Lykke.SettingsReader;
 using Lykke.SlackNotification.AzureQueue;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -23,7 +24,7 @@ namespace DutchAuction.Api
 {
     public class Startup
     {
-        public IHostingEnvironment Environment { get; }
+        public IHostingEnvironment HostingEnvironment { get; }
         public IContainer ApplicationContainer { get; set; }
 
         public Startup(IHostingEnvironment env)
@@ -35,7 +36,7 @@ namespace DutchAuction.Api
                 .AddEnvironmentVariables();
             Configuration = builder.Build();
 
-            Environment = env;
+            HostingEnvironment = env;
         }
 
         public IConfigurationRoot Configuration { get; }
@@ -68,7 +69,7 @@ namespace DutchAuction.Api
                 options.IncludeXmlComments(xmlPath);
             });
 
-            var settings = Configuration["SettingsUrl"].GetJsonAsync<ApplicationSettings>().Result;
+            var settings = LoadSettings();
             var appSettings = settings.DutchAuction;
 
             var slackService = services.UseSlackNotificationsSenderViaAzureQueue(new AzureQueueSettings
@@ -106,6 +107,26 @@ namespace DutchAuction.Api
             app.UseMvc();
             app.UseSwagger();
             app.UseSwaggerUi();
+        }
+
+        private static ApplicationSettings LoadSettings()
+        {
+            var settingsUrl = Environment.GetEnvironmentVariable("SettingsUrl");
+
+            if (string.IsNullOrEmpty(settingsUrl))
+            {
+                throw new Exception("Environment variable 'SettingsUrl' is not defined");
+            }
+
+            using (var httpClient = new HttpClient())
+            {
+                using (var response = httpClient.GetAsync(settingsUrl).Result)
+                {
+                    var settingsData = response.Content.ReadAsStringAsync().Result;
+
+                    return SettingsProcessor.Process<ApplicationSettings>(settingsData);
+                }
+            }
         }
     }
 }

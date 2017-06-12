@@ -20,7 +20,7 @@ namespace DutchAuction.Repositories.Lots
 
         public static string GenerateRowKey(DateTime date)
         {
-            return date.ToString(CultureInfo.InvariantCulture);
+            return date.ToString("yyyy.MM.dd HH:mm:ss.fffffff", CultureInfo.InvariantCulture);
         }
 
         public static AuctionLotEntity Create(IAuctionLot src)

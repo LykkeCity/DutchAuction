@@ -1,4 +1,5 @@
-﻿using Autofac;
+﻿using System;
+using Autofac;
 using AzureStorage.Tables;
 using Common.Log;
 using DutchAuction.Core;
@@ -35,7 +36,8 @@ namespace DutchAuction.Api.DependencyInjection
 
             builder
                 .Register<IAuctionLotRepository>(
-                    ctx => new AuctionLotRepository(new NoSqlTableInMemory<AuctionLotEntity>()))
+                    ctx => new AuctionLotRepository(
+                        new AzureTableStorage<AuctionLotEntity>(_settings.Db.DataConnectionString, "Lots", null)))
                 .SingleInstance();
 
             builder
@@ -55,7 +57,7 @@ namespace DutchAuction.Api.DependencyInjection
                 .SingleInstance();
 
             builder.Register(x => new MarketProfileManager(
-                    new LykkeMarketProfileServiceAPI(_settings.MarketProfile.ServiceUri), 
+                    new LykkeMarketProfileServiceAPI(new Uri(_settings.MarketProfile.ServiceUri)),
                     new MarketProfileCacheService(),
                     _settings.MarketProfile.CacheUpdatePeriod, _log))
                 .As<IMarketProfileManager>()
