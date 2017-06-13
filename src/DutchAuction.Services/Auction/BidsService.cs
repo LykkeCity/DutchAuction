@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using DutchAuction.Core.Services.Assets;
 using DutchAuction.Core.Services.Auction;
 using DutchAuction.Services.Auction.Models;
 
@@ -7,13 +6,10 @@ namespace DutchAuction.Services.Auction
 {
     public class BidsService : IBidsService
     {
-        private readonly IAssetPairsManager _assetPairsManager;
         private readonly Dictionary<string, Bid> _bids;
         
-        public BidsService(IAssetPairsManager assetPairsManager)
+        public BidsService()
         {
-            _assetPairsManager = assetPairsManager;
-
             _bids = new Dictionary<string, Bid>();
         }
 

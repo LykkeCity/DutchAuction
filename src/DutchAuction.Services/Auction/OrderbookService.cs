@@ -38,7 +38,7 @@ namespace DutchAuction.Services.Auction
             _lock = new ReaderWriterLockSlim();
         }
 
-        public OrderBook Render()
+        public Orderbook Render()
         {
             _lock.EnterReadLock();
 
@@ -107,7 +107,7 @@ namespace DutchAuction.Services.Auction
                 }
             }
 
-            return new OrderBook
+            return new Orderbook
             {
                 CurrentPrice = auctionPrice,
                 CurrentInMoneyVolume = auctionInMoneyVolume,

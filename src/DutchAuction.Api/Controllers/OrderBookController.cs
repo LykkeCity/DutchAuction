@@ -26,7 +26,7 @@ namespace DutchAuction.Api.Controllers
         [HttpGet]
         [Route("")]
         [ProducesResponseType(typeof(OrderbookResponse), (int)HttpStatusCode.OK)]
-        public OrderBook Get()
+        public Orderbook Get()
         {
             return _orderbookService.Render();
         }

@@ -1,6 +1,6 @@
 ﻿namespace DutchAuction.Core.Domain.Auction
 {
-    public class OrderBook
+    public class Orderbook
     {
         public Order[] Orders { get; set; }
         public double CurrentPrice { get; set; }
