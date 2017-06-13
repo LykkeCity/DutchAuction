@@ -4,74 +4,166 @@ using System.Threading;
 using DutchAuction.Core.Domain.Auction;
 using DutchAuction.Core.Services.Assets;
 using DutchAuction.Core.Services.Auction;
+using DutchAuction.Services.Auction.Models;
 
 namespace DutchAuction.Services.Auction
 {
     public class OrderbookService : IOrderbookService
     {
-        private class ClientAccountModel
+        private class BidVolume
+        {
+            public string ClientId { get; set; }
+            public double Volume { get; set; }
+        }
+
+        private class PriceBidVolumes
         {
             public double Price { get; set; }
-            public Dictionary<string, double> AssetVolumes { get; } = new Dictionary<string, double>();
+            public BidVolume[] BidVolumes { get; set; }
         }
 
         private readonly IAssetExchangeService _assetExchangeService;
-        private readonly Dictionary<string, ClientAccountModel> _clientAccounts;
+        private readonly double _totalAuctionVolume;
+        private readonly double _minClosingBidCutoffVolume;
+        private readonly Dictionary<string, Bid> _bids;
         private readonly ReaderWriterLockSlim _lock;
 
-        public OrderbookService(IAssetExchangeService assetExchangeService)
+        public OrderbookService(IAssetExchangeService assetExchangeService, double totalAuctionVolume, double minClosingBidCutoffVolume)
         {
             _assetExchangeService = assetExchangeService;
+            _totalAuctionVolume = totalAuctionVolume;
+            _minClosingBidCutoffVolume = minClosingBidCutoffVolume;
 
-            _clientAccounts = new Dictionary<string, ClientAccountModel>();
+            _bids = new Dictionary<string, Bid>();
             _lock = new ReaderWriterLockSlim();
         }
 
-        public Order[] Render()
+        public OrderBook Render()
         {
             _lock.EnterReadLock();
 
+            PriceBidVolumes[] priceBidVolumes;
+
             try
             {
-                return _clientAccounts
-                    .Select(i => new
-                    {
-                        ClientId = i.Key,
-                        Price = i.Value.Price,
-                        Volume = i.Value.AssetVolumes
-                            .Select(a => _assetExchangeService.Exchange(a.Value, a.Key, "CHF"))
-                            .Sum(chf => chf)
-                    })
-                    .GroupBy(i => i.Price)
-                    .Select(g => new Order
-                    {
-                        Investors = g.Select(i => i.ClientId).Distinct().Count(),
-                        Price = g.Key,
-                        Volume = g.Sum(i => i.Volume)
-                    })
-                    .OrderByDescending(o => o.Price)
-                    .ToArray();
+                priceBidVolumes = GetPriceBidVolumes();
             }
             finally
             {
                 _lock.ExitReadLock();
             }
+
+            var auctionInMoneyVolume = 0d;
+            var auctionOutOfTheMoneyVolume = 0d;
+            var auctionPrice = 0d;
+            var isAuctionClosed = false;
+
+            foreach (var priceBidVolume in priceBidVolumes)
+            {
+                if (!isAuctionClosed)
+                {
+                    auctionPrice = priceBidVolume.Price;
+                    // Small bids first
+                    var currentPriceBids = priceBidVolume
+                        .BidVolumes
+                        .OrderBy(b => b.Volume);
+
+                    foreach (var bid in currentPriceBids)
+                    {
+                        var nextAuctionVolume = auctionInMoneyVolume + bid.Volume;
+
+                        if (nextAuctionVolume >= _totalAuctionVolume)
+                        {
+                            var cutoffBidVolume = _totalAuctionVolume - auctionInMoneyVolume;
+                            var bidRestVolume = nextAuctionVolume - _totalAuctionVolume;
+
+                            // Grand big enought closing bids only
+                            if (cutoffBidVolume > _minClosingBidCutoffVolume)
+                            {
+                                if (bidRestVolume > 0)
+                                {
+                                    // TODO: Mark bid as partialy granted?
+                                    auctionInMoneyVolume += cutoffBidVolume;
+                                    auctionOutOfTheMoneyVolume += bidRestVolume;
+                                }
+                            }
+                            else
+                            {
+                                auctionOutOfTheMoneyVolume += bid.Volume;
+                            }
+
+                            isAuctionClosed = true;
+                            break;
+                        }
+
+                        auctionInMoneyVolume = nextAuctionVolume;
+
+                        // TODO: Mark bid as granted?
+                    }
+                }
+                else
+                {
+                    auctionOutOfTheMoneyVolume += priceBidVolume.BidVolumes.Sum(b => b.Volume);
+                }
+            }
+
+            return new OrderBook
+            {
+                CurrentPrice = auctionPrice,
+                CurrentInMoneyVolume = auctionInMoneyVolume,
+                CurrentOutOfTheMoneyVolume =auctionOutOfTheMoneyVolume,
+                Orders = priceBidVolumes
+                    .Select(p => new Order
+                    {
+                        Investors = p.BidVolumes.Length,
+                        Price = p.Price,
+                        Volume = p.BidVolumes.Sum(b => b.Volume) * auctionPrice
+                    })
+                    .ToArray()
+            };
         }
 
-        public void OnClientAccountAdded(string clientId, string assetId, double price, double volume)
+        private PriceBidVolumes[] GetPriceBidVolumes()
+        {
+            return _bids
+                .Select(i => new
+                {
+                    ClientId = i.Key,
+                    Price = i.Value.Price,
+                    Volume = i.Value
+                        .AssetVolumes
+                        .Sum(a => _assetExchangeService.Exchange(a.Value, a.Key, "CHF"))
+                })
+                .GroupBy(i => i.Price)
+                .OrderByDescending(g => g.Key)
+                .Select(g => new PriceBidVolumes
+                {
+                    Price = g.Key,
+                    BidVolumes = g
+                        .Select(i => new BidVolume
+                        {
+                            ClientId = i.ClientId,
+                            Volume = i.Volume
+                        })
+                        .ToArray()
+                })
+                .ToArray();
+        }
+
+        public void OnBidAdded(string clientId, string assetId, double price, double volume)
         {
             _lock.EnterWriteLock();
 
             try
             {
-                var account = new ClientAccountModel
+                var bid = new Bid
                 {
                     Price = price
                 };
 
-                account.AssetVolumes[assetId] = volume;
+                bid.AssetVolumes[assetId] = volume;
 
-                _clientAccounts.Add(clientId, account);
+                _bids.Add(clientId, bid);
             }
             finally
             {
@@ -79,13 +171,13 @@ namespace DutchAuction.Services.Auction
             }
         }
 
-        public void OnPriceSet(string clientId, double price)
+        public void OnBidPriceSet(string clientId, double price)
         {
             _lock.EnterWriteLock();
 
             try
             {
-                _clientAccounts[clientId].Price = price;
+                _bids[clientId].Price = price;
             }
             finally
             {
@@ -93,13 +185,13 @@ namespace DutchAuction.Services.Auction
             }
         }
 
-        public void OnAssetVolumeSet(string clientId, string assetId, double volume)
+        public void OnBidAssetVolumeSet(string clientId, string assetId, double volume)
         {
             _lock.EnterWriteLock();
 
             try
             {
-                _clientAccounts[clientId].AssetVolumes[assetId] = volume;
+                _bids[clientId].AssetVolumes[assetId] = volume;
             }
             finally
             {

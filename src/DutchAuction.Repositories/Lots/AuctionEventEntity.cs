@@ -5,13 +5,13 @@ using Microsoft.WindowsAzure.Storage.Table;
 
 namespace DutchAuction.Repositories.Lots
 {
-    public class BidEntity : TableEntity, IBid
+    public class AuctionEventEntity : TableEntity, IAuctionEvent
     {
-        public BidType Type { get; set; }
+        public AuctionEventType Type { get; set; }
         public string TypeCode
         {
             get => Type.ToString();
-            set => Type = (BidType) Enum.Parse(typeof(BidType), value);
+            set => Type = (AuctionEventType) Enum.Parse(typeof(AuctionEventType), value);
         }
         public string ClientId { get; set; }
         public string AssetId { get; set; }
@@ -29,9 +29,9 @@ namespace DutchAuction.Repositories.Lots
             return date.ToString("yyyy.MM.dd HH:mm:ss.fffffff", CultureInfo.InvariantCulture);
         }
 
-        public static BidEntity Create(IBid src)
+        public static AuctionEventEntity Create(IAuctionEvent src)
         {
-            return new BidEntity
+            return new AuctionEventEntity
             {
                 PartitionKey = GeneratePartitionKey(src.ClientId),
                 RowKey = GenerateRowKey(src.Date),

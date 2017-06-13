@@ -5,9 +5,9 @@ using DutchAuction.Core.Domain.Auction;
 
 namespace DutchAuction.Core.Services.Auction
 {
-    public interface IBidsManager : IStartable
+    public interface IAuctionEventsManager : IStartable
     {
-        void Add(IBid bid);
-        Task<IEnumerable<IBid>> GetAllAsync();
+        void Add(IAuctionEvent auctionEvent);
+        Task<IEnumerable<IAuctionEvent>> GetAllAsync();
     }
 }

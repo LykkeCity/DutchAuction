@@ -13,6 +13,8 @@ namespace DutchAuction.Core
             public string[] Assets { get; set; }
             public MarketProfileSettings MarketProfile { get; set; }
             public DictionariesSettings Dictionaries { get; set; }
+            public double TotalAuctionVolume { get; set; }
+            public double MinClosingBidCutoffVolume { get; set; }
         }
 
         public class DatabaseSettings

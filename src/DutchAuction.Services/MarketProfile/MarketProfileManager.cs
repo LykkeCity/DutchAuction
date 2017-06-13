@@ -83,6 +83,11 @@ namespace DutchAuction.Services.MarketProfile
 
         private static MarketProfileAssetPair Map(AssetPairModel source)
         {
+            if (source == null)
+            {
+                return null;
+            }
+
             return new MarketProfileAssetPair
             {
                 AssetPair = source.AssetPair,

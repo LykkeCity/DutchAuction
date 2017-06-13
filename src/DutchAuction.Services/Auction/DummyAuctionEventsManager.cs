@@ -6,19 +6,19 @@ using DutchAuction.Core.Services.Auction;
 
 namespace DutchAuction.Services.Auction
 {
-    internal class DummyBidsManager : IBidsManager
+    internal class DummyAuctionEventsManager : IAuctionEventsManager
     {
         public void Start()
         {
         }
 
-        public void Add(IBid bid)
+        public void Add(IAuctionEvent auctionEvent)
         {
         }
 
-        public Task<IEnumerable<IBid>> GetAllAsync()
+        public Task<IEnumerable<IAuctionEvent>> GetAllAsync()
         {
-            return Task.FromResult(Enumerable.Empty<IBid>());
+            return Task.FromResult(Enumerable.Empty<IAuctionEvent>());
         }
     }
 }

@@ -3,7 +3,6 @@ using DutchAuction.Api.Models;
 using DutchAuction.Core;
 using DutchAuction.Core.Services.Auction;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace DutchAuction.Api.Controllers
 {
@@ -13,6 +12,7 @@ namespace DutchAuction.Api.Controllers
     [Route("api/[controller]")]
     public class BidsController : Controller
     {
+        private readonly ApplicationSettings.DutchAuctionSettings _settings;
         private readonly IAuctionManager _auctionManager;
 
         public BidsController(
@@ -20,6 +20,7 @@ namespace DutchAuction.Api.Controllers
             IAuctionManager auctionManager,
             IOrderbookService orderbookService)
         {
+            _settings = settings;
             _auctionManager = auctionManager;
         }      
 
@@ -30,12 +31,14 @@ namespace DutchAuction.Api.Controllers
         /// <returns></returns>
         [HttpPost("")]
         [ProducesResponseType(typeof(AuctionOperationResponse), (int)HttpStatusCode.OK)]
-        [ProducesResponseType(typeof(ModelStateDictionary), (int)HttpStatusCode.BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponse), (int)HttpStatusCode.BadRequest)]
         public IActionResult StartBidding([FromBody]StartBiddingModel model)
         {
+            model.Validate(ModelState, _settings);
+
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                return BadRequest(ErrorResponse.Create(ModelState));
             }
 
             var result = _auctionManager.StartBidding(model.ClientId, model.AssetId, model.Price, model.Volume, model.Date);
@@ -50,12 +53,14 @@ namespace DutchAuction.Api.Controllers
         /// <returns></returns>
         [HttpPut("price")]
         [ProducesResponseType(typeof(AuctionOperationResponse), (int)HttpStatusCode.OK)]
-        [ProducesResponseType(typeof(ModelStateDictionary), (int)HttpStatusCode.BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponse), (int)HttpStatusCode.BadRequest)]
         public IActionResult SetPrice([FromBody]SetPriceModel model)
         {
+            model.Validate(ModelState);
+
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                return BadRequest(ErrorResponse.Create(ModelState));
             }
 
             var result = _auctionManager.AcceptPriceBid(model.ClientId, model.Price, model.Date);
@@ -70,12 +75,14 @@ namespace DutchAuction.Api.Controllers
         /// <returns></returns>
         [HttpPut("volume")]
         [ProducesResponseType(typeof(AuctionOperationResponse), (int)HttpStatusCode.OK)]
-        [ProducesResponseType(typeof(ModelStateDictionary), (int)HttpStatusCode.BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponse), (int)HttpStatusCode.BadRequest)]
         public IActionResult SetVolume([FromBody]SetVolumeModel model)
         {
+            model.Validate(ModelState, _settings);
+
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                return BadRequest(ErrorResponse.Create(ModelState));
             }
 
             var result = _auctionManager.AcceptVolumeBid(model.ClientId, model.AssetId, model.Volume, model.Date);

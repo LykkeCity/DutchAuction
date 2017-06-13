@@ -4,9 +4,9 @@ namespace DutchAuction.Core.Services.Auction
 {
     public interface IOrderbookService
     {
-        Order[] Render();
-        void OnClientAccountAdded(string clientId, string assetId, double price, double volume);
-        void OnPriceSet(string clientId, double price);
-        void OnAssetVolumeSet(string clientId, string assetId, double volume);
+        OrderBook Render();
+        void OnBidAdded(string clientId, string assetId, double price, double volume);
+        void OnBidPriceSet(string clientId, double price);
+        void OnBidAssetVolumeSet(string clientId, string assetId, double volume);
     }
 }

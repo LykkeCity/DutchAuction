@@ -1,6 +1,6 @@
 ﻿namespace DutchAuction.Core.Domain.Auction
 {
-    public enum BidType
+    public enum AuctionEventType
     {
         StartBidding,
         SetPrice,

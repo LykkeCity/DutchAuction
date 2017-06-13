@@ -2,9 +2,9 @@
 
 namespace DutchAuction.Core.Domain.Auction
 {
-    public interface IBid
+    public interface IAuctionEvent
     {
-        BidType Type { get; }
+        AuctionEventType Type { get; }
         string ClientId { get; }
         string AssetId { get; }
         double Volume { get; }

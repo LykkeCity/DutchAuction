@@ -10,24 +10,24 @@ using DutchAuction.Core.Services.Auction;
 
 namespace DutchAuction.Services.Auction
 {
-    public class BidsManager :
-        IBidsManager,
+    public class AuctionEventsManager :
+        IAuctionEventsManager,
         IDisposable
     {
-        private readonly IBidsRepository _repository;
-        private readonly ConcurrentQueue<IBid> _persistQueue;
+        private readonly IAuctionEventsRepository _repository;
+        private readonly ConcurrentQueue<IAuctionEvent> _persistQueue;
         private readonly ILog _log;
 
         private CancellationTokenSource _persistQueuePumpingCancellationTokenSource;
 
-        public BidsManager(
-            IBidsRepository bidsRepository,
+        public AuctionEventsManager(
+            IAuctionEventsRepository auctionEventsRepository,
             ILog log)
         {
-            _repository = bidsRepository;
+            _repository = auctionEventsRepository;
             _log = log;
 
-            _persistQueue = new ConcurrentQueue<IBid>();
+            _persistQueue = new ConcurrentQueue<IAuctionEvent>();
         }
 
         public void Start()
@@ -45,12 +45,12 @@ namespace DutchAuction.Services.Auction
             }
         }
 
-        public void Add(IBid bid)
+        public void Add(IAuctionEvent auctionEvent)
         {
-            _persistQueue.Enqueue(bid);
+            _persistQueue.Enqueue(auctionEvent);
         }
 
-        public async Task<IEnumerable<IBid>> GetAllAsync()
+        public async Task<IEnumerable<IAuctionEvent>> GetAllAsync()
         {
             return await _repository.GetAllAsync();
         }
@@ -61,14 +61,14 @@ namespace DutchAuction.Services.Auction
             {
                 try
                 {
-                    IBid bid;
+                    IAuctionEvent auctionEvent;
 
-                    if (_persistQueue.TryPeek(out bid))
+                    if (_persistQueue.TryPeek(out auctionEvent))
                     {
-                        await _repository.AddAsync(bid);
+                        await _repository.AddAsync(auctionEvent);
                     }
 
-                    _persistQueue.TryDequeue(out bid);
+                    _persistQueue.TryDequeue(out auctionEvent);
                 }
                 catch(Exception ex)
                 {

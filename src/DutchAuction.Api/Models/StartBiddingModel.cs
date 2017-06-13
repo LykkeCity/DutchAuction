@@ -1,5 +1,8 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
+using DutchAuction.Core;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using System.Linq;
 
 namespace DutchAuction.Api.Models
 {
@@ -38,37 +41,32 @@ namespace DutchAuction.Api.Models
         [Required]
         public DateTime Date { get; set; }
 
-        public void Validate()
+        public void Validate(ModelStateDictionary modelState, ApplicationSettings.DutchAuctionSettings settings)
         {
-            //if (string.IsNullOrEmpty(model.ClientId))
-            //{
-            //    return ResponseModel.CreateFail(ResponseModel.ErrorCode.InvalidInputField,
-            //        $"{nameof(model.ClientId)} is required");
-            //}
+            if (string.IsNullOrEmpty(ClientId))
+            {
+                modelState.AddModelError(nameof(ClientId), "Client is required");
+            }
 
-            //if (string.IsNullOrEmpty(model.AssetId))
-            //{
-            //    return ResponseModel.CreateFail(ResponseModel.ErrorCode.InvalidInputField,
-            //        $"{nameof(model.AssetId)} is required");
-            //}
+            if (string.IsNullOrEmpty(AssetId))
+            {
+                modelState.AddModelError(nameof(AssetId), "Asset is required");
+            }
 
-            //if (!_settings.Assets.Contains(model.AssetId))
-            //{
-            //    return ResponseModel.CreateFail(ResponseModel.ErrorCode.InvalidInputField,
-            //        $"wrong {nameof(model.AssetId)}");
-            //}
+            if (!settings.Assets.Contains(AssetId))
+            {
+                modelState.AddModelError(nameof(AssetId), "Not allowed Asset");
+            }
 
-            //if (model.Price <= 0)
-            //{
-            //    return ResponseModel.CreateFail(ResponseModel.ErrorCode.InvalidInputField,
-            //        $"wrong {nameof(model.Price)}");
-            //}
+            if (Price <= 0)
+            {
+                modelState.AddModelError(nameof(Price), "Price should be positive number");
+            }
 
-            //if (model.Volume <= 0)
-            //{
-            //    return ResponseModel.CreateFail(ResponseModel.ErrorCode.InvalidInputField,
-            //        $"wrong {nameof(model.Volume)}");
-            //}
+            if (Volume <= 0)
+            {
+                modelState.AddModelError(nameof(Volume), "Volume should be positive number");
+            }
         }
     }
 }

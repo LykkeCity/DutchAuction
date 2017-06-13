@@ -35,9 +35,9 @@ namespace DutchAuction.Api.DependencyInjection
             builder.RegisterInstance(_settings).SingleInstance();
 
             builder
-                .Register<IBidsRepository>(
-                    ctx => new BidsRepository(
-                        new AzureTableStorage<BidEntity>(_settings.Db.DataConnectionString, "Bids", null)))
+                .Register<IAuctionEventsRepository>(
+                    ctx => new AuctionEventsRepository(
+                        new AzureTableStorage<AuctionEventEntity>(_settings.Db.DataConnectionString, "AuctionEvents", null)))
                 .SingleInstance();
 
             builder
@@ -47,8 +47,8 @@ namespace DutchAuction.Api.DependencyInjection
                             "Dictionaries", null)))
                 .SingleInstance();
 
-            builder.RegisterType<BidsManager>()
-                .As<IBidsManager>()
+            builder.RegisterType<AuctionEventsManager>()
+                .As<IAuctionEventsManager>()
                 .As<IStartable>()
                 .SingleInstance();
 
@@ -76,12 +76,14 @@ namespace DutchAuction.Api.DependencyInjection
             builder.RegisterType<AssetExchangeService>().As<IAssetExchangeService>();
 
             builder
-                .RegisterType<ClientAccountsService>()
-                .As<IClientAccountsService>()
+                .RegisterType<BidsService>()
+                .As<IBidsService>()
                 .SingleInstance();
 
-            builder
-                .RegisterType<OrderbookService>()
+            builder.Register(x => new OrderbookService(
+                    x.Resolve<IAssetExchangeService>(),
+                    _settings.TotalAuctionVolume,
+                    _settings.MinClosingBidCutoffVolume))
                 .As<IOrderbookService>()
                 .SingleInstance();
         }

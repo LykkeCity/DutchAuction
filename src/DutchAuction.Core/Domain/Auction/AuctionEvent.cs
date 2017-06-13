@@ -2,18 +2,18 @@
 
 namespace DutchAuction.Core.Domain.Auction
 {
-    public class Bid : IBid
+    public class AuctionEvent : IAuctionEvent
     {
-        public BidType Type { get; private set; }
+        public AuctionEventType Type { get; private set; }
         public string ClientId { get; private set; }
         public string AssetId { get; private set; }
         public double Volume { get; private set; }
         public double Price { get; private set; }
         public DateTime Date { get; private set; }
 
-        public static Bid Create(IBid src)
+        public static AuctionEvent Create(IAuctionEvent src)
         {
-            return new Bid
+            return new AuctionEvent
             {
                 Type = src.Type,
                 AssetId = src.AssetId,
@@ -24,11 +24,11 @@ namespace DutchAuction.Core.Domain.Auction
             };
         }
 
-        public static Bid CreateStartBidding(string clientId, string assetId, double price, double volume, DateTime date)
+        public static AuctionEvent CreateStartBidding(string clientId, string assetId, double price, double volume, DateTime date)
         {
-            return new Bid
+            return new AuctionEvent
             {
-                Type = BidType.StartBidding,
+                Type = AuctionEventType.StartBidding,
                 ClientId = clientId,
                 AssetId = assetId,
                 Price = price,
@@ -37,22 +37,22 @@ namespace DutchAuction.Core.Domain.Auction
             };
         }
 
-        public static Bid CreateSetPrice(string clientId, double price, DateTime date)
+        public static AuctionEvent CreateSetPrice(string clientId, double price, DateTime date)
         {
-            return new Bid
+            return new AuctionEvent
             {
-                Type = BidType.SetPrice,
+                Type = AuctionEventType.SetPrice,
                 ClientId = clientId,
                 Price = price,
                 Date = date
             };
         }
 
-        public static Bid CreateSetAssetVolume(string clientId, string assetId, double volume, DateTime date)
+        public static AuctionEvent CreateSetAssetVolume(string clientId, string assetId, double volume, DateTime date)
         {
-            return new Bid
+            return new AuctionEvent
             {
-                Type = BidType.SetAssetVolume,
+                Type = AuctionEventType.SetAssetVolume,
                 ClientId = clientId,
                 AssetId = assetId,
                 Volume = volume,

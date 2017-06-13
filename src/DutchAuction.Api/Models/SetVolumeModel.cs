@@ -1,5 +1,8 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using DutchAuction.Core;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace DutchAuction.Api.Models
 {
@@ -31,5 +34,28 @@ namespace DutchAuction.Api.Models
         /// </summary>
         [Required]
         public DateTime Date { get; set; }
+
+        public void Validate(ModelStateDictionary modelState, ApplicationSettings.DutchAuctionSettings settings)
+        {
+            if (string.IsNullOrEmpty(ClientId))
+            {
+                modelState.AddModelError(nameof(ClientId), "Client is required");
+            }
+
+            if (string.IsNullOrEmpty(AssetId))
+            {
+                modelState.AddModelError(nameof(AssetId), "Asset is required");
+            }
+
+            if (!settings.Assets.Contains(AssetId))
+            {
+                modelState.AddModelError(nameof(AssetId), "Not allowed Asset");
+            }
+
+            if (Volume <= 0)
+            {
+                modelState.AddModelError(nameof(Volume), "Volume should be positive number");
+            }
+        }
     }
 }

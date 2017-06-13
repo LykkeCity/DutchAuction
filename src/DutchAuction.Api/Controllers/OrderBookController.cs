@@ -1,4 +1,6 @@
-﻿using DutchAuction.Core.Domain.Auction;
+﻿using System.Net;
+using DutchAuction.Api.Models;
+using DutchAuction.Core.Domain.Auction;
 using DutchAuction.Core.Services.Auction;
 using Microsoft.AspNetCore.Mvc;
 
@@ -23,7 +25,8 @@ namespace DutchAuction.Api.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("")]
-        public Order[] Get()
+        [ProducesResponseType(typeof(OrderbookResponse), (int)HttpStatusCode.OK)]
+        public OrderBook Get()
         {
             return _orderbookService.Render();
         }
