@@ -8,11 +8,11 @@ namespace DutchAuction.Api.Controllers
     /// Controller for order book
     /// </summary>
     [Route("api/[controller]")]
-    public class OrderBookController : Controller
+    public class OrderbookController : Controller
     {
         private readonly IOrderbookService _orderbookService;
 
-        public OrderBookController(IOrderbookService orderbookService)
+        public OrderbookController(IOrderbookService orderbookService)
         {
             _orderbookService = orderbookService;
         }

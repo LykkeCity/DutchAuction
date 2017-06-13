@@ -38,7 +38,7 @@ namespace DutchAuction.Api.Models
         [Required]
         public DateTime Date { get; set; }
 
-        public ResponseModel Validate()
+        public void Validate()
         {
             //if (string.IsNullOrEmpty(model.ClientId))
             //{
@@ -69,8 +69,6 @@ namespace DutchAuction.Api.Models
             //    return ResponseModel.CreateFail(ResponseModel.ErrorCode.InvalidInputField,
             //        $"wrong {nameof(model.Volume)}");
             //}
-
-            return null;
         }
     }
 }

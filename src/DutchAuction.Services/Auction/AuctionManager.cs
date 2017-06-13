@@ -36,28 +36,52 @@ namespace DutchAuction.Services.Auction
             _bidsManager = realBidsManager;
         }
 
-        public void StartBidding(string clientId, string assetId, double price, double volume, DateTime date)
+        public AuctionOperationResult StartBidding(string clientId, string assetId, double price, double volume, DateTime date)
         {
-            _accountsService.Add(clientId, assetId, price, volume);
+            var result = _accountsService.StartBidding(clientId, assetId, price, volume);
+
+            if (result != AuctionOperationResult.Ok)
+            {
+                return result;
+            }
+
             _orderbookService.OnClientAccountAdded(clientId, assetId, price, volume);
 
             _bidsManager.Add(Bid.CreateStartBidding(clientId, assetId, price, volume, date));
+
+            return AuctionOperationResult.Ok;
         }
 
-        public void AcceptPriceBid(string clientId, double price, DateTime date)
+        public AuctionOperationResult AcceptPriceBid(string clientId, double price, DateTime date)
         {
-            _accountsService.SetPrice(clientId, price);
+            var result = _accountsService.SetPrice(clientId, price);
+
+            if (result != AuctionOperationResult.Ok)
+            {
+                return result;
+            }
+
             _orderbookService.OnPriceSet(clientId, price);
 
             _bidsManager.Add(Bid.CreateSetPrice(clientId, price, date));
+
+            return AuctionOperationResult.Ok;
         }
 
-        public void AcceptVolumeBid(string clientId, string assetId, double volume, DateTime date)
+        public AuctionOperationResult AcceptVolumeBid(string clientId, string assetId, double volume, DateTime date)
         {
-            _accountsService.SetAssetVolume(clientId, assetId, volume);
+            var result = _accountsService.SetAssetVolume(clientId, assetId, volume);
+
+            if (result != AuctionOperationResult.Ok)
+            {
+                return result;
+            }
+
             _orderbookService.OnAssetVolumeSet(clientId, assetId, volume);
 
             _bidsManager.Add(Bid.CreateSetAssetVolume(clientId, assetId, volume, date));
+
+            return AuctionOperationResult.Ok;
         }
 
         private void ReplayBid(IBid bid)

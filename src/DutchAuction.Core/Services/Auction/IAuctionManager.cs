@@ -16,7 +16,7 @@ namespace DutchAuction.Core.Services.Auction
         /// <param name="price">Price in CHF</param>
         /// <param name="volume">Volume of given <paramref name="assetId"/></param>
         /// <param name="date"></param>
-        void StartBidding(string clientId, string assetId, double price, double volume, DateTime date);
+        AuctionOperationResult StartBidding(string clientId, string assetId, double price, double volume, DateTime date);
 
         /// <summary>
         /// Accepts new client`s price bid
@@ -24,7 +24,7 @@ namespace DutchAuction.Core.Services.Auction
         /// <param name="clientId"></param>
         /// <param name="price">Price in CHF</param>
         /// <param name="date"></param>
-        void AcceptPriceBid(string clientId, double price, DateTime date);
+        AuctionOperationResult AcceptPriceBid(string clientId, double price, DateTime date);
 
         /// <summary>
         /// Accepts new client`s volume bid
@@ -33,6 +33,6 @@ namespace DutchAuction.Core.Services.Auction
         /// <param name="assetId"></param>
         /// <param name="volume">Volume change of given <paramref name="assetId"/></param>
         /// <param name="date"></param>
-        void AcceptVolumeBid(string clientId, string assetId, double volume, DateTime date);
+        AuctionOperationResult AcceptVolumeBid(string clientId, string assetId, double volume, DateTime date);
     }
 }

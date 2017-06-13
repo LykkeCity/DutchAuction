@@ -18,6 +18,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.PlatformAbstractions;
+using Newtonsoft.Json.Converters;
 using Swashbuckle.Swagger.Model;
 
 namespace DutchAuction.Api
@@ -49,6 +50,7 @@ namespace DutchAuction.Api
             services.AddMvc()
                 .AddJsonOptions(options =>
                 {
+                    options.SerializerSettings.Converters.Add(new StringEnumConverter());
                     options.SerializerSettings.ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver();
                 });
 

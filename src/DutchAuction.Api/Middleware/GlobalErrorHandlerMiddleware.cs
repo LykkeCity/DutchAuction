@@ -3,10 +3,10 @@ using System.IO;
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
-using DutchAuction.Api.Models;
 using DutchAuction.Core;
 using Microsoft.ApplicationInsights.AspNetCore.Extensions;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace DutchAuction.Api.Middleware
 {
@@ -52,7 +52,9 @@ namespace DutchAuction.Api.Middleware
             ctx.Response.ContentType = "application/json";
             ctx.Response.StatusCode = 500;
 
-            var response = ResponseModel.CreateFail(ResponseModel.ErrorCode.RuntimeError, "Technical problems");
+            var response = new ModelStateDictionary();
+
+            response.AddModelError(string.Empty, "Technical problems");
 
             await ctx.Response.WriteAsync(response.ToJson());
         }
