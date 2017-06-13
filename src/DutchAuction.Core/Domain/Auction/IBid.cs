@@ -1,9 +1,10 @@
 ﻿using System;
 
-namespace DutchAuction.Core.Domain.Lots
+namespace DutchAuction.Core.Domain.Auction
 {
-    public interface IAuctionLot
+    public interface IBid
     {
+        BidType Type { get; }
         string ClientId { get; }
         string AssetId { get; }
         double Volume { get; }

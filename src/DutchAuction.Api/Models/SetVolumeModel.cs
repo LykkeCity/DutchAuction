@@ -4,33 +4,32 @@ using System.ComponentModel.DataAnnotations;
 namespace DutchAuction.Api.Models
 {
     /// <summary>
-    /// Auction lot
+    /// Set client's asset volume
     /// </summary>
-    public class AuctionLotModel
+    public class SetVolumeModel
     {
         /// <summary>
         /// Client ID
         /// </summary>
         [Required]
         public string ClientId { get; set; }
+
         /// <summary>
         /// Asset ID (CHF, USD...)
         /// </summary>
         [Required]
         public string AssetId { get; set; }
+
         /// <summary>
-        /// Lot volume
+        /// Volume of given asset
         /// </summary>
         [Required]
         public double Volume { get; set; }
+
         /// <summary>
-        /// Lot price
+        /// Bid date
         /// </summary>
         [Required]
-        public double Price { get; set; }
-        /// <summary>
-        /// Lot date
-        /// </summary>
         public DateTime Date { get; set; }
     }
 }

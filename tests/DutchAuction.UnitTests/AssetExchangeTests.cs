@@ -1,9 +1,9 @@
 ﻿using System;
 using DutchAuction.Core.Domain.Asset;
+using DutchAuction.Core.Domain.MarketProfile;
 using DutchAuction.Core.Services.Assets;
 using DutchAuction.Core.Services.MarketProfile;
 using DutchAuction.Services.Assets;
-using Lykke.MarketProfileService.Client.Models;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 
@@ -33,10 +33,12 @@ namespace DutchAuction.UnitTests
                 .Setup(m => m.TryGetPair(
                     It.Is<string>(s => s == "EUR"),
                     It.Is<string>(s => s == "USD")))
-                .Returns(new AssetPairModel(
-                    "EURUSD",
-                    1.11933, 1.11985,
-                    DateTime.UtcNow, DateTime.UtcNow));
+                .Returns(new MarketProfileAssetPair
+                {
+                    AssetPair = "EURUSD",
+                    AskPrice = 1.11985,
+                    BidPrice = 1.11933
+                });
 
             _assetPairsManagerMock
                 .Setup(m => m.GetEnabledPair(It.Is<string>(s => s == "EURUSD")))
@@ -62,10 +64,12 @@ namespace DutchAuction.UnitTests
                 .Setup(m => m.TryGetPair(
                     It.Is<string>(s => s == "EUR"),
                     It.Is<string>(s => s == "USD")))
-                .Returns(new AssetPairModel(
-                    "EURUSD",
-                    1.11933, 1.11985,
-                    DateTime.UtcNow, DateTime.UtcNow));
+                .Returns(new MarketProfileAssetPair
+                {
+                    AssetPair = "EURUSD",
+                    AskPrice = 1.11985,
+                    BidPrice = 1.11933
+                });
 
             _assetPairsManagerMock
                 .Setup(m => m.GetEnabledPair(It.Is<string>(s => s == "EURUSD")))

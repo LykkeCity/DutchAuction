@@ -1,4 +1,4 @@
-﻿namespace DutchAuction.Core.Services.Lots
+﻿namespace DutchAuction.Core.Domain.Auction
 {
     public class Order
     {

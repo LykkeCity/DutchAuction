@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Common.Log;
 using DutchAuction.Core;
+using DutchAuction.Core.Domain.MarketProfile;
 using DutchAuction.Core.Services.MarketProfile;
 using Lykke.MarketProfileService.Client;
 using Lykke.MarketProfileService.Client.Models;
@@ -20,7 +21,11 @@ namespace DutchAuction.Services.MarketProfile
 
         private Timer _cacheUpdateTimer;
 
-        public MarketProfileManager(ILykkeMarketProfileServiceAPI api, IMarketProfileCacheService cache, TimeSpan cacheUpdatePeriod, ILog log)
+        public MarketProfileManager(
+            ILykkeMarketProfileServiceAPI api,
+            IMarketProfileCacheService cache,
+            TimeSpan cacheUpdatePeriod, 
+            ILog log)
         {
             _api = api;
             _cache = cache;
@@ -44,11 +49,17 @@ namespace DutchAuction.Services.MarketProfile
             }
         }
 
-        public AssetPairModel TryGetPair(string baseAssetId, string targetAssetId)
+        public MarketProfileAssetPair TryGetPair(string baseAssetId, string targetAssetId)
         {
             var assetPairId = string.Concat(baseAssetId, targetAssetId);
 
-            return _cache.TryGetPair(assetPairId);
+            return Map(_cache.TryGetPair(assetPairId));
+        }
+
+        public void Dispose()
+        {
+            _cacheUpdateTimer?.Dispose();
+            _api?.Dispose();
         }
 
         private async Task OnUpdateCacheTimerAsync()
@@ -70,10 +81,16 @@ namespace DutchAuction.Services.MarketProfile
             _cache.Update(pairs);
         }
 
-        public void Dispose()
+        private static MarketProfileAssetPair Map(AssetPairModel source)
         {
-            _cacheUpdateTimer?.Dispose();
-            _api?.Dispose();
+            return new MarketProfileAssetPair
+            {
+                AssetPair = source.AssetPair,
+                AskPrice = source.AskPrice,
+                BidPrice = source.BidPrice,
+                AskPriceTimestamp = source.AskPriceTimestamp,
+                BidPriceTimestamp = source.BidPriceTimestamp
+            };
         }
     }
 }

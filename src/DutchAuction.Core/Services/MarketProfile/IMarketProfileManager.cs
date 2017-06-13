@@ -1,10 +1,10 @@
 ﻿using Autofac;
-using Lykke.MarketProfileService.Client.Models;
+using DutchAuction.Core.Domain.MarketProfile;
 
 namespace DutchAuction.Core.Services.MarketProfile
 {
     public interface IMarketProfileManager : IStartable
     {
-        AssetPairModel TryGetPair(string baseAssetId, string targetAssetId);
+        MarketProfileAssetPair TryGetPair(string baseAssetId, string targetAssetId);
     }
 }

@@ -4,14 +4,14 @@ using AzureStorage.Tables;
 using Common.Log;
 using DutchAuction.Core;
 using DutchAuction.Core.Domain.Asset;
-using DutchAuction.Core.Domain.Lots;
+using DutchAuction.Core.Domain.Auction;
 using DutchAuction.Core.Services.Assets;
-using DutchAuction.Core.Services.Lots;
+using DutchAuction.Core.Services.Auction;
 using DutchAuction.Core.Services.MarketProfile;
 using DutchAuction.Repositories.Assets;
 using DutchAuction.Repositories.Lots;
 using DutchAuction.Services.Assets;
-using DutchAuction.Services.Lots;
+using DutchAuction.Services.Auction;
 using DutchAuction.Services.MarketProfile;
 using Lykke.MarketProfileService.Client;
 
@@ -35,9 +35,9 @@ namespace DutchAuction.Api.DependencyInjection
             builder.RegisterInstance(_settings).SingleInstance();
 
             builder
-                .Register<IAuctionLotRepository>(
-                    ctx => new AuctionLotRepository(
-                        new AzureTableStorage<AuctionLotEntity>(_settings.Db.DataConnectionString, "Lots", null)))
+                .Register<IBidsRepository>(
+                    ctx => new BidsRepository(
+                        new AzureTableStorage<BidEntity>(_settings.Db.DataConnectionString, "Bids", null)))
                 .SingleInstance();
 
             builder
@@ -47,13 +47,9 @@ namespace DutchAuction.Api.DependencyInjection
                             "Dictionaries", null)))
                 .SingleInstance();
 
-            builder.RegisterType<AuctionLotManager>()
-                .As<IAuctionLotManager>()
+            builder.RegisterType<BidsManager>()
+                .As<IBidsManager>()
                 .As<IStartable>()
-                .SingleInstance();
-
-            builder.RegisterType<AuctionLotCacheService>()
-                .As<IAuctionLotCacheService>()
                 .SingleInstance();
 
             builder.Register(x => new MarketProfileManager(
@@ -72,7 +68,22 @@ namespace DutchAuction.Api.DependencyInjection
                 .As<IStartable>()
                 .SingleInstance();
 
+            builder.RegisterType<AuctionManager>()
+                .As<IAuctionManager>()
+                .As<IStartable>()
+                .SingleInstance();
+
             builder.RegisterType<AssetExchangeService>().As<IAssetExchangeService>();
+
+            builder
+                .RegisterType<ClientAccountsService>()
+                .As<IClientAccountsService>()
+                .SingleInstance();
+
+            builder
+                .RegisterType<OrderbookService>()
+                .As<IOrderbookService>()
+                .SingleInstance();
         }
     }
 }
