@@ -22,7 +22,34 @@ namespace DutchAuction.Api.Controllers
         {
             _settings = settings;
             _auctionManager = auctionManager;
-        }      
+        }
+
+        [HttpGet("{clientId}")]
+        [ProducesResponseType(typeof(BidResponse), (int)HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(ErrorResponse), (int)HttpStatusCode.BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponse), (int)HttpStatusCode.NotFound)]
+        public IActionResult GetBid(string clientId)
+        {
+            if (string.IsNullOrEmpty(clientId))
+            {
+                return BadRequest(ErrorResponse.Create($"{nameof(clientId)} is required"));
+            }
+
+            var bid = _auctionManager.TryGetBid(clientId);
+            if (bid == null)
+            {
+                return NotFound(ErrorResponse.Create("Client not found"));
+            }
+
+            return Ok(new BidResponse
+            {
+                ClientId = bid.ClientId,
+                Price = bid.Price,
+                AssetVolumes = bid.AssetVolumes,
+                State = bid.State,
+                InMoneyAssetVolumes = bid.InMoneyAssetVolumes
+            });
+        }
 
         /// <summary>
         /// Start client's bidding

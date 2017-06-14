@@ -4,7 +4,6 @@ using System.Threading;
 using DutchAuction.Core.Domain.Auction;
 using DutchAuction.Core.Services.Assets;
 using DutchAuction.Core.Services.Auction;
-using DutchAuction.Services.Auction.Models;
 
 namespace DutchAuction.Services.Auction
 {
@@ -14,6 +13,7 @@ namespace DutchAuction.Services.Auction
         {
             public string ClientId { get; set; }
             public double Volume { get; set; }
+            public IReadOnlyDictionary<string, double> AssetVolumes { get; set; }
         }
 
         private class PriceBidVolumes
@@ -23,18 +23,22 @@ namespace DutchAuction.Services.Auction
         }
 
         private readonly IAssetExchangeService _assetExchangeService;
+        private readonly IBidsService _bidsService;
         private readonly double _totalAuctionVolume;
         private readonly double _minClosingBidCutoffVolume;
-        private readonly Dictionary<string, Bid> _bids;
         private readonly ReaderWriterLockSlim _lock;
 
-        public OrderbookService(IAssetExchangeService assetExchangeService, double totalAuctionVolume, double minClosingBidCutoffVolume)
+        public OrderbookService(
+            IAssetExchangeService assetExchangeService,
+            IBidsService bidsService,
+            double totalAuctionVolume,
+            double minClosingBidCutoffVolume)
         {
             _assetExchangeService = assetExchangeService;
+            _bidsService = bidsService;
             _totalAuctionVolume = totalAuctionVolume;
             _minClosingBidCutoffVolume = minClosingBidCutoffVolume;
 
-            _bids = new Dictionary<string, Bid>();
             _lock = new ReaderWriterLockSlim();
         }
 
@@ -74,22 +78,33 @@ namespace DutchAuction.Services.Auction
 
                         if (nextAuctionVolume >= _totalAuctionVolume)
                         {
-                            var cutoffBidVolume = _totalAuctionVolume - auctionInMoneyVolume;
-                            var bidRestVolume = nextAuctionVolume - _totalAuctionVolume;
+                            var inMoneyBidVolume = _totalAuctionVolume - auctionInMoneyVolume;
+                            var outOfTheMoneBidVolume = nextAuctionVolume - _totalAuctionVolume;
 
                             // Grand big enought closing bids only
-                            if (cutoffBidVolume > _minClosingBidCutoffVolume)
+                            if (inMoneyBidVolume > _minClosingBidCutoffVolume)
                             {
-                                if (bidRestVolume > 0)
+                                if (outOfTheMoneBidVolume > 0)
                                 {
-                                    // TODO: Mark bid as partialy granted?
-                                    auctionInMoneyVolume += cutoffBidVolume;
-                                    auctionOutOfTheMoneyVolume += bidRestVolume;
+                                    auctionInMoneyVolume += inMoneyBidVolume;
+                                    auctionOutOfTheMoneyVolume += outOfTheMoneBidVolume;
+
+                                    var inMoneyBidRate = inMoneyBidVolume / bid.Volume;
+
+                                    var inMoneyBidAssetVolumes = bid.AssetVolumes
+                                        .ToDictionary(i => i.Key, i => i.Value * inMoneyBidRate);
+
+                                    _bidsService.MarkBidAsPartiallyInMoney(bid.ClientId, inMoneyBidAssetVolumes);
+                                }
+                                else
+                                {
+                                    _bidsService.MarkBidAsInMoney(bid.ClientId);
                                 }
                             }
                             else
                             {
                                 auctionOutOfTheMoneyVolume += bid.Volume;
+                                _bidsService.MarkBidAsOutOfTheMoney(bid.ClientId);
                             }
 
                             isAuctionClosed = true;
@@ -98,12 +113,16 @@ namespace DutchAuction.Services.Auction
 
                         auctionInMoneyVolume = nextAuctionVolume;
 
-                        // TODO: Mark bid as granted?
+                        _bidsService.MarkBidAsInMoney(bid.ClientId);
                     }
                 }
                 else
                 {
-                    auctionOutOfTheMoneyVolume += priceBidVolume.BidVolumes.Sum(b => b.Volume);
+                    foreach (var bid in priceBidVolume.BidVolumes)
+                    {
+                        auctionOutOfTheMoneyVolume += bid.Volume;
+                        _bidsService.MarkBidAsOutOfTheMoney(bid.ClientId);
+                    }
                 }
             }
 
@@ -125,14 +144,14 @@ namespace DutchAuction.Services.Auction
 
         private PriceBidVolumes[] GetPriceBidVolumes()
         {
-            return _bids
+            return _bidsService
+                .GetAll()
                 .Select(i => new
                 {
-                    ClientId = i.Key,
-                    Price = i.Value.Price,
-                    Volume = i.Value
-                        .AssetVolumes
-                        .Sum(a => _assetExchangeService.Exchange(a.Value, a.Key, "CHF"))
+                    ClientId = i.ClientId,
+                    Price = i.Price,
+                    Volume = i.AssetVolumes.Sum(a => _assetExchangeService.Exchange(a.Value, a.Key, "CHF")),
+                    AssetVolumes = i.AssetVolumes
                 })
                 .GroupBy(i => i.Price)
                 .OrderByDescending(g => g.Key)
@@ -143,60 +162,12 @@ namespace DutchAuction.Services.Auction
                         .Select(i => new BidVolume
                         {
                             ClientId = i.ClientId,
-                            Volume = i.Volume
+                            Volume = i.Volume,
+                            AssetVolumes = i.AssetVolumes
                         })
                         .ToArray()
                 })
                 .ToArray();
-        }
-
-        public void OnBidAdded(string clientId, string assetId, double price, double volume)
-        {
-            _lock.EnterWriteLock();
-
-            try
-            {
-                var bid = new Bid
-                {
-                    Price = price
-                };
-
-                bid.AssetVolumes[assetId] = volume;
-
-                _bids.Add(clientId, bid);
-            }
-            finally
-            {
-                _lock.ExitWriteLock();
-            }
-        }
-
-        public void OnBidPriceSet(string clientId, double price)
-        {
-            _lock.EnterWriteLock();
-
-            try
-            {
-                _bids[clientId].Price = price;
-            }
-            finally
-            {
-                _lock.ExitWriteLock();
-            }
-        }
-
-        public void OnBidAssetVolumeSet(string clientId, string assetId, double volume)
-        {
-            _lock.EnterWriteLock();
-
-            try
-            {
-                _bids[clientId].AssetVolumes[assetId] = volume;
-            }
-            finally
-            {
-                _lock.ExitWriteLock();
-            }
         }
     }
 }

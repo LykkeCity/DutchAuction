@@ -8,16 +8,13 @@ namespace DutchAuction.Services.Auction
     {
         private IAuctionEventsManager _auctionEventsManager;
         private readonly IBidsService _bidsService;
-        private readonly IOrderbookService _orderbookService;
 
         public AuctionManager(
             IAuctionEventsManager auctionEventsManager, 
-            IBidsService bidsService,
-            IOrderbookService orderbookService)
+            IBidsService bidsService)
         {
             _auctionEventsManager = auctionEventsManager;
             _bidsService = bidsService;
-            _orderbookService = orderbookService;
         }
 
         public void Start()
@@ -36,6 +33,11 @@ namespace DutchAuction.Services.Auction
             _auctionEventsManager = realBidsManager;
         }
 
+        public IBid TryGetBid(string clientId)
+        {
+            return _bidsService.TryGetBid(clientId);
+        }
+
         public AuctionOperationResult StartBidding(string clientId, string assetId, double price, double volume, DateTime date)
         {
             var result = _bidsService.StartBidding(clientId, assetId, price, volume);
@@ -44,8 +46,6 @@ namespace DutchAuction.Services.Auction
             {
                 return result;
             }
-
-            _orderbookService.OnBidAdded(clientId, assetId, price, volume);
 
             _auctionEventsManager.Add(AuctionEvent.CreateStartBidding(clientId, assetId, price, volume, date));
 
@@ -61,8 +61,6 @@ namespace DutchAuction.Services.Auction
                 return result;
             }
 
-            _orderbookService.OnBidPriceSet(clientId, price);
-
             _auctionEventsManager.Add(AuctionEvent.CreateSetPrice(clientId, price, date));
 
             return AuctionOperationResult.Ok;
@@ -76,8 +74,6 @@ namespace DutchAuction.Services.Auction
             {
                 return result;
             }
-
-            _orderbookService.OnBidAssetVolumeSet(clientId, assetId, volume);
 
             _auctionEventsManager.Add(AuctionEvent.CreateSetAssetVolume(clientId, assetId, volume, date));
 

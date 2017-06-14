@@ -1,5 +1,6 @@
 ﻿using System;
 using Autofac;
+using DutchAuction.Core.Domain.Auction;
 
 namespace DutchAuction.Core.Services.Auction
 {
@@ -8,6 +9,8 @@ namespace DutchAuction.Core.Services.Auction
     /// </summary>
     public interface IAuctionManager : IStartable
     {
+        IBid TryGetBid(string clientId);
+
         /// <summary>
         /// Starts client`s bidding
         /// </summary>

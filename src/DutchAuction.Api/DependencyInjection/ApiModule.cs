@@ -81,7 +81,8 @@ namespace DutchAuction.Api.DependencyInjection
                 .SingleInstance();
 
             builder.Register(x => new OrderbookService(
-                    x.Resolve<IAssetExchangeService>(),
+                    x.Resolve<IAssetExchangeService>(), 
+                    x.Resolve<IBidsService>(),
                     _settings.TotalAuctionVolume,
                     _settings.MinClosingBidCutoffVolume))
                 .As<IOrderbookService>()

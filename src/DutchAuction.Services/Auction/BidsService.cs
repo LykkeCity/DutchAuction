@@ -1,16 +1,36 @@
 using System.Collections.Generic;
+using System.Linq;
+using DutchAuction.Core.Domain.Auction;
 using DutchAuction.Core.Services.Auction;
-using DutchAuction.Services.Auction.Models;
 
 namespace DutchAuction.Services.Auction
 {
     public class BidsService : IBidsService
     {
+
         private readonly Dictionary<string, Bid> _bids;
         
         public BidsService()
         {
             _bids = new Dictionary<string, Bid>();
+        }
+
+        public IBid[] GetAll()
+        {
+            lock (_bids)
+            {
+                return _bids.Values.Cast<IBid>().ToArray();
+            }
+        }
+
+        public IBid TryGetBid(string clientId)
+        {
+            lock (_bids)
+            {
+                _bids.TryGetValue(clientId, out Bid bid);
+
+                return bid;
+            }
         }
 
         public AuctionOperationResult StartBidding(string clientId, string assetId, double price, double volume)
@@ -22,13 +42,8 @@ namespace DutchAuction.Services.Auction
                     return AuctionOperationResult.ClientHasAlreadyDoneBid;
                 }
 
-                var bid = new Bid
-                {
-                    Price = price
-                };
-
-                bid.AssetVolumes.Add(assetId, volume);
-
+                var bid = new Bid(clientId, price, assetId, volume);
+                
                 _bids.Add(clientId, bid);
             }
 
@@ -49,7 +64,7 @@ namespace DutchAuction.Services.Auction
                     return AuctionOperationResult.PriceIsLessThanCurrentBidPrice;
                 }
 
-                bid.Price = price;
+                _bids[clientId] = bid.SetPrice(price);
             }
 
             return AuctionOperationResult.Ok;
@@ -71,10 +86,34 @@ namespace DutchAuction.Services.Auction
                     return AuctionOperationResult.VolumeIsLessThanCurrentBidAssetVolume;
                 }
 
-                bid.AssetVolumes[assetId] = volume;
+                _bids[clientId] = bid.SetVolume(assetId, volume);
             }
 
             return AuctionOperationResult.Ok;
+        }
+
+        public void MarkBidAsPartiallyInMoney(string clientId, IDictionary<string, double> inMoneyBidAssetVolumes)
+        {
+            lock (_bids)
+            {
+                _bids[clientId] = _bids[clientId].SetPartiallyInMoneyState(inMoneyBidAssetVolumes);
+            }
+        }
+
+        public void MarkBidAsInMoney(string clientId)
+        {
+            lock (_bids)
+            {
+                _bids[clientId] = _bids[clientId].SetInMoneyState();
+            }
+        }
+
+        public void MarkBidAsOutOfTheMoney(string clientId)
+        {
+            lock (_bids)
+            {
+                _bids[clientId] = _bids[clientId].SetOutOfTheMoneyState();
+            }
         }
     }
 }
