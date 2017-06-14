@@ -17,7 +17,7 @@ namespace DutchAuction.Services.Assets
         private readonly TimeSpan _cacheUpdatePeriod;
         private readonly ILog _log;
 
-        private Timer _caheUpdateTimer;
+        private Timer _cacheUpdateTimer;
 
         public AssetPairsManager(IAssetPairsRepository repository, IAssetPairsCacheService cache, TimeSpan cacheUpdatePeriod, ILog log)
         {
@@ -33,8 +33,7 @@ namespace DutchAuction.Services.Assets
             {
                 UpdateCacheAsync().Wait();
 
-                _caheUpdateTimer = new Timer(async s => await OnUpdateCacheTimerAsync(), null, _cacheUpdatePeriod,
-                    _cacheUpdatePeriod);
+                _cacheUpdateTimer = new Timer(async s => await OnUpdateCacheTimerAsync(), null, _cacheUpdatePeriod, Timeout.InfiniteTimeSpan);
             }
             catch (Exception ex)
             {
@@ -57,13 +56,19 @@ namespace DutchAuction.Services.Assets
 
         private async Task OnUpdateCacheTimerAsync()
         {
+            _cacheUpdateTimer.Change(Timeout.Infinite, Timeout.Infinite);
+
             try
             {
                 await UpdateCacheAsync();
             }
             catch (Exception ex)
             {
-                _log.WriteErrorAsync(Constants.ComponentName, null, null, ex).Wait();
+                await _log.WriteErrorAsync(Constants.ComponentName, null, null, ex);
+            }
+            finally
+            {
+                _cacheUpdateTimer.Change(_cacheUpdatePeriod, Timeout.InfiniteTimeSpan);
             }
         }
 
@@ -76,7 +81,7 @@ namespace DutchAuction.Services.Assets
 
         public void Dispose()
         {
-            _caheUpdateTimer?.Dispose();
+            _cacheUpdateTimer?.Dispose();
         }
     }
 }

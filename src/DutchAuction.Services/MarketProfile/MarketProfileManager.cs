@@ -39,8 +39,7 @@ namespace DutchAuction.Services.MarketProfile
             {
                 UpdateCacheAsync().Wait();
 
-                _cacheUpdateTimer = new Timer(async s => await OnUpdateCacheTimerAsync(), null, _cacheUpdatePeriod,
-                    _cacheUpdatePeriod);
+                _cacheUpdateTimer = new Timer(async s => await OnUpdateCacheTimerAsync(), null, _cacheUpdatePeriod, Timeout.InfiniteTimeSpan);
             }
             catch (Exception ex)
             {
@@ -64,13 +63,19 @@ namespace DutchAuction.Services.MarketProfile
 
         private async Task OnUpdateCacheTimerAsync()
         {
+            _cacheUpdateTimer.Change(Timeout.Infinite, Timeout.Infinite);
+
             try
             {
                 await UpdateCacheAsync();
             }
             catch (Exception ex)
             {
-                _log.WriteErrorAsync(Constants.ComponentName, null, null, ex).Wait();
+                await _log.WriteErrorAsync(Constants.ComponentName, null, null, ex);
+            }
+            finally
+            {
+                _cacheUpdateTimer.Change(_cacheUpdatePeriod, Timeout.InfiniteTimeSpan);
             }
         }
 

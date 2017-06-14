@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using DutchAuction.Core.Domain.Auction;
 using DutchAuction.Core.Services.Assets;
 using DutchAuction.Core.Services.Auction;
@@ -26,7 +25,6 @@ namespace DutchAuction.Services.Auction
         private readonly IBidsService _bidsService;
         private readonly double _totalAuctionVolume;
         private readonly double _minClosingBidCutoffVolume;
-        private readonly ReaderWriterLockSlim _lock;
 
         public OrderbookService(
             IAssetExchangeService assetExchangeService,
@@ -38,25 +36,11 @@ namespace DutchAuction.Services.Auction
             _bidsService = bidsService;
             _totalAuctionVolume = totalAuctionVolume;
             _minClosingBidCutoffVolume = minClosingBidCutoffVolume;
-
-            _lock = new ReaderWriterLockSlim();
         }
 
         public Orderbook Render()
         {
-            _lock.EnterReadLock();
-
-            PriceBidVolumes[] priceBidVolumes;
-
-            try
-            {
-                priceBidVolumes = GetPriceBidVolumes();
-            }
-            finally
-            {
-                _lock.ExitReadLock();
-            }
-
+            var priceBidVolumes = GetPriceBidVolumes();
             var auctionInMoneyVolume = 0d;
             var auctionOutOfTheMoneyVolume = 0d;
             var auctionPrice = 0d;
@@ -79,18 +63,18 @@ namespace DutchAuction.Services.Auction
                         if (nextAuctionVolume >= _totalAuctionVolume)
                         {
                             var inMoneyBidVolume = _totalAuctionVolume - auctionInMoneyVolume;
-                            var outOfTheMoneBidVolume = nextAuctionVolume - _totalAuctionVolume;
+                            var outOfTheMoneyBidVolume = nextAuctionVolume - _totalAuctionVolume;
 
                             // Grand big enought closing bids only
                             if (inMoneyBidVolume > _minClosingBidCutoffVolume)
                             {
-                                if (outOfTheMoneBidVolume > 0)
+                                if (outOfTheMoneyBidVolume > 0)
                                 {
                                     auctionInMoneyVolume += inMoneyBidVolume;
-                                    auctionOutOfTheMoneyVolume += outOfTheMoneBidVolume;
+                                    auctionOutOfTheMoneyVolume += outOfTheMoneyBidVolume;
 
+                                    // Take every asset proportionaly to rest of the bid
                                     var inMoneyBidRate = inMoneyBidVolume / bid.Volume;
-
                                     var inMoneyBidAssetVolumes = bid.AssetVolumes
                                         .ToDictionary(i => i.Key, i => i.Value * inMoneyBidRate);
 
@@ -130,12 +114,13 @@ namespace DutchAuction.Services.Auction
             {
                 CurrentPrice = auctionPrice,
                 CurrentInMoneyVolume = auctionInMoneyVolume,
-                CurrentOutOfTheMoneyVolume =auctionOutOfTheMoneyVolume,
+                CurrentOutOfTheMoneyVolume = auctionOutOfTheMoneyVolume,
                 Orders = priceBidVolumes
                     .Select(p => new Order
                     {
                         Investors = p.BidVolumes.Length,
                         Price = p.Price,
+                        // Convert volume to LKK
                         Volume = p.BidVolumes.Sum(b => b.Volume) * auctionPrice
                     })
                     .ToArray()
@@ -150,6 +135,7 @@ namespace DutchAuction.Services.Auction
                 {
                     ClientId = i.ClientId,
                     Price = i.Price,
+                    // Convert volume to CHF
                     Volume = i.AssetVolumes.Sum(a => _assetExchangeService.Exchange(a.Value, a.Key, "CHF")),
                     AssetVolumes = i.AssetVolumes
                 })

@@ -34,17 +34,19 @@ namespace DutchAuction.Api.DependencyInjection
 
             builder.RegisterInstance(_settings).SingleInstance();
 
+            RegisterAuction(builder);
+
+            RegisterAssets(builder);
+
+            RegisterMarketProfile(builder);
+        }
+
+        private void RegisterAuction(ContainerBuilder builder)
+        {
             builder
                 .Register<IAuctionEventsRepository>(
                     ctx => new AuctionEventsRepository(
                         new AzureTableStorage<AuctionEventEntity>(_settings.Db.DataConnectionString, "AuctionEvents", null)))
-                .SingleInstance();
-
-            builder
-                .Register<IAssetPairsRepository>(
-                    ctx => new AssetPairsRepository(
-                        new AzureTableStorage<AssetPairEntity>(_settings.Db.DictionariesConnectionString,
-                            "Dictionaries", null)))
                 .SingleInstance();
 
             builder.RegisterType<AuctionEventsManager>()
@@ -52,12 +54,43 @@ namespace DutchAuction.Api.DependencyInjection
                 .As<IStartable>()
                 .SingleInstance();
 
-            builder.Register(x => new MarketProfileManager(
-                    new LykkeMarketProfileServiceAPI(new Uri(_settings.MarketProfile.ServiceUri)),
-                    new MarketProfileCacheService(),
-                    _settings.MarketProfile.CacheUpdatePeriod, _log))
-                .As<IMarketProfileManager>()
+            builder.Register(x => new AuctionManager(
+                    x.Resolve<IAuctionEventsManager>(),
+                    x.Resolve<IBidsService>(),
+                    x.Resolve<IOrderbookService>(),
+                    x.Resolve<IPriceHistoryService>(),
+                    _log,
+                    _settings.OrderbookUpdatePeriod))
+                .As<IAuctionManager>()
                 .As<IStartable>()
+                .SingleInstance();
+
+            builder
+                .RegisterType<BidsService>()
+                .As<IBidsService>()
+                .SingleInstance();
+
+            builder.Register(x => new OrderbookService(
+                    x.Resolve<IAssetExchangeService>(),
+                    x.Resolve<IBidsService>(),
+                    _settings.TotalAuctionVolume,
+                    _settings.MinClosingBidCutoffVolume))
+                .As<IOrderbookService>()
+                .SingleInstance();
+
+            builder.Register(x => new PriceHistoryService(_log, _settings.AuctionHistoryRabbitSettings))
+                .As<IPriceHistoryService>()
+                .As<IStartable>()
+                .SingleInstance();
+        }
+
+        private void RegisterAssets(ContainerBuilder builder)
+        {
+            builder
+                .Register<IAssetPairsRepository>(
+                    ctx => new AssetPairsRepository(
+                        new AzureTableStorage<AssetPairEntity>(_settings.Db.DictionariesConnectionString,
+                            "Dictionaries", null)))
                 .SingleInstance();
 
             builder.Register(x => new AssetPairsManager(
@@ -68,24 +101,17 @@ namespace DutchAuction.Api.DependencyInjection
                 .As<IStartable>()
                 .SingleInstance();
 
-            builder.RegisterType<AuctionManager>()
-                .As<IAuctionManager>()
-                .As<IStartable>()
-                .SingleInstance();
-
             builder.RegisterType<AssetExchangeService>().As<IAssetExchangeService>();
+        }
 
-            builder
-                .RegisterType<BidsService>()
-                .As<IBidsService>()
-                .SingleInstance();
-
-            builder.Register(x => new OrderbookService(
-                    x.Resolve<IAssetExchangeService>(), 
-                    x.Resolve<IBidsService>(),
-                    _settings.TotalAuctionVolume,
-                    _settings.MinClosingBidCutoffVolume))
-                .As<IOrderbookService>()
+        private void RegisterMarketProfile(ContainerBuilder builder)
+        {
+            builder.Register(x => new MarketProfileManager(
+                    new LykkeMarketProfileServiceAPI(new Uri(_settings.MarketProfile.ServiceUri)),
+                    new MarketProfileCacheService(),
+                    _settings.MarketProfile.CacheUpdatePeriod, _log))
+                .As<IMarketProfileManager>()
+                .As<IStartable>()
                 .SingleInstance();
         }
     }

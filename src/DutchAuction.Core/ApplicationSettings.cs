@@ -15,6 +15,8 @@ namespace DutchAuction.Core
             public DictionariesSettings Dictionaries { get; set; }
             public double TotalAuctionVolume { get; set; }
             public double MinClosingBidCutoffVolume { get; set; }
+            public TimeSpan OrderbookUpdatePeriod { get; set; }
+            public RabbitSettings AuctionHistoryRabbitSettings { get; set; }
         }
 
         public class DatabaseSettings
@@ -40,6 +42,12 @@ namespace DutchAuction.Core
             public AzureQueueSettings AzureQueue { get; set; }
 
             public int ThrottlingLimitSeconds { get; set; }
+        }
+
+        public class RabbitSettings
+        {
+            public string ConnectionString { get; set; }
+            public string ExchangeName { get; set; }
         }
 
         public class AzureQueueSettings

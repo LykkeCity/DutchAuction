@@ -12,11 +12,11 @@ namespace DutchAuction.Api.Controllers
     [Route("api/[controller]")]
     public class OrderbookController : Controller
     {
-        private readonly IOrderbookService _orderbookService;
+        private readonly IAuctionManager _auctionManager;
 
-        public OrderbookController(IOrderbookService orderbookService)
+        public OrderbookController(IAuctionManager auctionManager)
         {
-            _orderbookService = orderbookService;
+            _auctionManager = auctionManager;
         }
 
         /// <summary>
@@ -28,7 +28,7 @@ namespace DutchAuction.Api.Controllers
         [ProducesResponseType(typeof(OrderbookResponse), (int)HttpStatusCode.OK)]
         public Orderbook Get()
         {
-            return _orderbookService.Render();
+            return _auctionManager.GetOrderbook();
         }
     }
 }
