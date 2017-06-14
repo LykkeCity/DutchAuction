@@ -1,4 +1,5 @@
-﻿using DutchAuction.Core.Domain.Auction;
+﻿using System.Linq;
+using DutchAuction.Core.Domain.Auction;
 using DutchAuction.Core.Services.Auction;
 using DutchAuction.Services.Auction;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -31,8 +32,8 @@ namespace DutchAuction.UnitTests
             Assert.AreEqual("client1", bid.ClientId);
             Assert.AreEqual(100, bid.Price);
             Assert.AreEqual(1, bid.AssetVolumes.Count);
-            Assert.IsTrue(bid.AssetVolumes.ContainsKey("USD"));
-            Assert.AreEqual(10, bid.AssetVolumes["USD"]);
+            Assert.AreEqual(1, bid.AssetVolumes.Count(i => i.Key == "USD"));
+            Assert.AreEqual(10, bid.AssetVolumes.Single(i => i.Key == "USD").Value);
             Assert.AreEqual(BidState.NotCalculatedYet, bid.State);
             Assert.AreEqual(0, bid.InMoneyAssetVolumes.Count);
         }
@@ -58,10 +59,10 @@ namespace DutchAuction.UnitTests
             Assert.AreEqual(200, bid2.Price);
             Assert.AreEqual(1, bid1.AssetVolumes.Count);
             Assert.AreEqual(1, bid2.AssetVolumes.Count);
-            Assert.IsTrue(bid1.AssetVolumes.ContainsKey("USD"));
-            Assert.IsTrue(bid2.AssetVolumes.ContainsKey("EUR"));
-            Assert.AreEqual(10, bid1.AssetVolumes["USD"]);
-            Assert.AreEqual(20, bid2.AssetVolumes["EUR"]);
+            Assert.AreEqual(1, bid1.AssetVolumes.Count(i => i.Key == "USD"));
+            Assert.AreEqual(1, bid2.AssetVolumes.Count(i => i.Key == "EUR"));
+            Assert.AreEqual(10, bid1.AssetVolumes.Single(i => i.Key == "USD").Value);
+            Assert.AreEqual(20, bid2.AssetVolumes.Single(i => i.Key == "EUR").Value);
             Assert.AreEqual(BidState.NotCalculatedYet, bid1.State);
             Assert.AreEqual(BidState.NotCalculatedYet, bid2.State);
             Assert.AreEqual(0, bid1.InMoneyAssetVolumes.Count);
@@ -85,8 +86,8 @@ namespace DutchAuction.UnitTests
             Assert.AreEqual("client1", bid.ClientId);
             Assert.AreEqual(100, bid.Price);
             Assert.AreEqual(1, bid.AssetVolumes.Count);
-            Assert.IsTrue(bid.AssetVolumes.ContainsKey("USD"));
-            Assert.AreEqual(10, bid.AssetVolumes["USD"]);
+            Assert.AreEqual(1, bid.AssetVolumes.Count(i => i.Key == "USD"));
+            Assert.AreEqual(10, bid.AssetVolumes.Single(i => i.Key == "USD").Value);
             Assert.AreEqual(BidState.NotCalculatedYet, bid.State);
             Assert.AreEqual(0, bid.InMoneyAssetVolumes.Count);
         }
@@ -108,8 +109,8 @@ namespace DutchAuction.UnitTests
             Assert.AreEqual("client1", bid.ClientId);
             Assert.AreEqual(101, bid.Price);
             Assert.AreEqual(1, bid.AssetVolumes.Count);
-            Assert.IsTrue(bid.AssetVolumes.ContainsKey("USD"));
-            Assert.AreEqual(10, bid.AssetVolumes["USD"]);
+            Assert.AreEqual(1, bid.AssetVolumes.Count(i => i.Key == "USD"));
+            Assert.AreEqual(10, bid.AssetVolumes.Single(i => i.Key == "USD").Value);
             Assert.AreEqual(BidState.NotCalculatedYet, bid.State);
             Assert.AreEqual(0, bid.InMoneyAssetVolumes.Count);
         }
@@ -131,8 +132,8 @@ namespace DutchAuction.UnitTests
             Assert.AreEqual("client1", bid.ClientId);
             Assert.AreEqual(100, bid.Price);
             Assert.AreEqual(1, bid.AssetVolumes.Count);
-            Assert.IsTrue(bid.AssetVolumes.ContainsKey("USD"));
-            Assert.AreEqual(11, bid.AssetVolumes["USD"]);
+            Assert.AreEqual(1, bid.AssetVolumes.Count(i => i.Key == "USD"));
+            Assert.AreEqual(11, bid.AssetVolumes.Single(i => i.Key == "USD").Value);
             Assert.AreEqual(BidState.NotCalculatedYet, bid.State);
             Assert.AreEqual(0, bid.InMoneyAssetVolumes.Count);
         }
@@ -154,8 +155,8 @@ namespace DutchAuction.UnitTests
             Assert.AreEqual("client1", bid.ClientId);
             Assert.AreEqual(100, bid.Price);
             Assert.AreEqual(1, bid.AssetVolumes.Count);
-            Assert.IsTrue(bid.AssetVolumes.ContainsKey("USD"));
-            Assert.AreEqual(10, bid.AssetVolumes["USD"]);
+            Assert.AreEqual(1, bid.AssetVolumes.Count(i => i.Key == "USD"));
+            Assert.AreEqual(10, bid.AssetVolumes.Single(i => i.Key == "USD").Value);
             Assert.AreEqual(BidState.NotCalculatedYet, bid.State);
             Assert.AreEqual(0, bid.InMoneyAssetVolumes.Count);
         }
@@ -177,8 +178,8 @@ namespace DutchAuction.UnitTests
             Assert.AreEqual("client1", bid.ClientId);
             Assert.AreEqual(100, bid.Price);
             Assert.AreEqual(1, bid.AssetVolumes.Count);
-            Assert.IsTrue(bid.AssetVolumes.ContainsKey("USD"));
-            Assert.AreEqual(10, bid.AssetVolumes["USD"]);
+            Assert.AreEqual(1, bid.AssetVolumes.Count(i => i.Key == "USD"));
+            Assert.AreEqual(10, bid.AssetVolumes.Single(i => i.Key == "USD").Value);
             Assert.AreEqual(BidState.NotCalculatedYet, bid.State);
             Assert.AreEqual(0, bid.InMoneyAssetVolumes.Count);
         }
@@ -200,10 +201,10 @@ namespace DutchAuction.UnitTests
             Assert.AreEqual("client1", bid.ClientId);
             Assert.AreEqual(100, bid.Price);
             Assert.AreEqual(2, bid.AssetVolumes.Count);
-            Assert.IsTrue(bid.AssetVolumes.ContainsKey("USD"));
-            Assert.IsTrue(bid.AssetVolumes.ContainsKey("EUR"));
-            Assert.AreEqual(10, bid.AssetVolumes["USD"]);
-            Assert.AreEqual(20, bid.AssetVolumes["EUR"]);
+            Assert.AreEqual(1, bid.AssetVolumes.Count(i => i.Key == "USD"));
+            Assert.AreEqual(1, bid.AssetVolumes.Count(i => i.Key == "EUR"));          
+            Assert.AreEqual(10, bid.AssetVolumes.Single(i => i.Key == "USD").Value);
+            Assert.AreEqual(20, bid.AssetVolumes.Single(i => i.Key == "EUR").Value);
             Assert.AreEqual(BidState.NotCalculatedYet, bid.State);
             Assert.AreEqual(0, bid.InMoneyAssetVolumes.Count);
         }
@@ -226,10 +227,10 @@ namespace DutchAuction.UnitTests
             Assert.AreEqual("client1", bid.ClientId);
             Assert.AreEqual(100, bid.Price);
             Assert.AreEqual(2, bid.AssetVolumes.Count);
-            Assert.IsTrue(bid.AssetVolumes.ContainsKey("USD"));
-            Assert.IsTrue(bid.AssetVolumes.ContainsKey("EUR"));
-            Assert.AreEqual(10, bid.AssetVolumes["USD"]);
-            Assert.AreEqual(20, bid.AssetVolumes["EUR"]);
+            Assert.AreEqual(1, bid.AssetVolumes.Count(i => i.Key == "USD"));
+            Assert.AreEqual(1, bid.AssetVolumes.Count(i => i.Key == "EUR"));
+            Assert.AreEqual(10, bid.AssetVolumes.Single(i => i.Key == "USD").Value);
+            Assert.AreEqual(20, bid.AssetVolumes.Single(i => i.Key == "EUR").Value);
             Assert.AreEqual(BidState.NotCalculatedYet, bid.State);
             Assert.AreEqual(0, bid.InMoneyAssetVolumes.Count);
         }

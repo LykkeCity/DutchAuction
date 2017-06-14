@@ -7,8 +7,8 @@ namespace DutchAuction.Api.Models
     {
         public string ClientId { get; set; }
         public double Price { get; set; }
-        public IReadOnlyDictionary<string, double> AssetVolumes { get; set; }
+        public IReadOnlyCollection<KeyValuePair<string, double>> AssetVolumes { get; set; }
         public BidState State { get; set; }
-        public IReadOnlyDictionary<string, double> InMoneyAssetVolumes { get; set; }
+        public IReadOnlyCollection<KeyValuePair<string, double>> InMoneyAssetVolumes { get; set; }
     }
 }

@@ -1,75 +1,100 @@
 ﻿using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Collections.ObjectModel;
-using System.Linq;
 
 namespace DutchAuction.Core.Domain.Auction
 {
-    /// <summary>
-    /// Immutable bid
-    /// </summary>
     public class Bid : IBid
     {
         public string ClientId { get; }
-        public double Price { get; }
-        public IReadOnlyDictionary<string, double> AssetVolumes { get; }
-        public BidState State { get; }
-        public IReadOnlyDictionary<string, double> InMoneyAssetVolumes { get; }
-        
+        public double Price { get; private set; }
+        public IReadOnlyCollection<KeyValuePair<string, double>> AssetVolumes { get; } 
+        public BidState State { get; private set; }
+        public IReadOnlyCollection<KeyValuePair<string, double>> InMoneyAssetVolumes { get; }
+
+        private readonly List<KeyValuePair<string, double>> _assetVolumes;
+        private readonly List<KeyValuePair<string, double>> _inMoneyAsssetVolumes;
+
         public Bid(string clientId, double price, string assetId, double volume)
         {
             ClientId = clientId;
             Price = price;
-            AssetVolumes = new ReadOnlyDictionary<string, double>(new Dictionary<string, double>
-            {
-                {assetId, volume}
-            });
             State = BidState.NotCalculatedYet;
-            InMoneyAssetVolumes = new ReadOnlyDictionary<string, double>(new Dictionary<string, double>());
+
+            _assetVolumes = new List<KeyValuePair<string, double>>
+            {
+                new KeyValuePair<string, double>(assetId, volume)
+            };
+
+            _inMoneyAsssetVolumes = new List<KeyValuePair<string, double>>();
+
+            AssetVolumes = new ReadOnlyCollection<KeyValuePair<string, double>>(_assetVolumes);
+            InMoneyAssetVolumes = new ReadOnlyCollection<KeyValuePair<string, double>>(_inMoneyAsssetVolumes);
         }
 
-        private Bid(string clientId, double price, IReadOnlyDictionary<string, double> assetVolumes, BidState state, IReadOnlyDictionary<string, double> inMoneyAssetVolumes)
+        public void SetPrice(double price)
         {
-            ClientId = clientId;
+            State = BidState.NotCalculatedYet;
+
             Price = price;
-            AssetVolumes = assetVolumes;
-            State = state;
-            InMoneyAssetVolumes = inMoneyAssetVolumes;
-  
+            
+            _inMoneyAsssetVolumes.Clear();
         }
 
-        public Bid SetPrice(double price)
+        public double TryGetVolume(string assetId)
         {
-            return new Bid(ClientId, price, AssetVolumes, State, InMoneyAssetVolumes);
+            var index = _assetVolumes.FindIndex(item => item.Key == assetId);
+
+            if (index >= 0)
+            {
+                return _assetVolumes[index].Value;
+            }
+
+            return 0d;
         }
 
-        public Bid SetVolume(string assetId, double volume)
+        public void SetVolume(string assetId, double volume)
         {
-            var assetVolumes = AssetVolumes.ToDictionary(i => i.Key, i => i.Value);
+            State = BidState.NotCalculatedYet;
 
-            assetVolumes[assetId] = volume;
+            var index = _assetVolumes.FindIndex(item => item.Key == assetId);
 
-            return new Bid(
-                ClientId, 
-                Price, 
-                new ReadOnlyDictionary<string, double>(assetVolumes), 
-                BidState.NotCalculatedYet, 
-                new ReadOnlyDictionary<string, double>(new Dictionary<string, double>()));
+            if (index >= 0)
+            {
+                _assetVolumes[index] = new KeyValuePair<string, double>(assetId, volume);
+            }
+            else
+            {
+                _assetVolumes.Add(new KeyValuePair<string, double>(assetId, volume));
+            }
+
+            _inMoneyAsssetVolumes.Clear();
         }
 
-        public Bid SetInMoneyState()
+        public void SetInMoneyState()
         {
-            return new Bid(ClientId, Price, AssetVolumes, BidState.InMoney, AssetVolumes);
+            State = BidState.InMoney;
+
+            _inMoneyAsssetVolumes.Clear();
+
+            foreach (var item in AssetVolumes)
+            {
+                _inMoneyAsssetVolumes.Add(item);
+            }
         }
 
-        public Bid SetOutOfTheMoneyState()
+        public void SetOutOfTheMoneyState()
         {
-            return new Bid(ClientId, Price, AssetVolumes, BidState.OutOfTheMoney, new ReadOnlyDictionary<string, double>(new Dictionary<string, double>()));
+            State = BidState.OutOfTheMoney;
+
+            _inMoneyAsssetVolumes.Clear();
         }
 
-        public Bid SetPartiallyInMoneyState(IDictionary<string, double> inMoneyAssetVolumes)
+        public void SetPartiallyInMoneyState(IEnumerable<KeyValuePair<string, double>> inMoneyAssetVolumes)
         {
-            return new Bid(ClientId, Price, AssetVolumes, BidState.PartiallyInMoney, inMoneyAssetVolumes.ToImmutableDictionary());
+            State = BidState.PartiallyInMoney;
+
+            _inMoneyAsssetVolumes.Clear();
+            _inMoneyAsssetVolumes.AddRange(inMoneyAssetVolumes);
         }
     }
 }

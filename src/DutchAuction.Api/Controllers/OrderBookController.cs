@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Linq;
+using System.Net;
 using DutchAuction.Api.Models;
 using DutchAuction.Core.Domain.Auction;
 using DutchAuction.Core.Services.Auction;
@@ -26,9 +27,30 @@ namespace DutchAuction.Api.Controllers
         [HttpGet]
         [Route("")]
         [ProducesResponseType(typeof(OrderbookResponse), (int)HttpStatusCode.OK)]
-        public Orderbook Get()
+        public OrderbookResponse Get()
         {
-            return _auctionManager.GetOrderbook();
+            var orderbook = _auctionManager.GetOrderbook();
+
+            return new OrderbookResponse
+            {
+                Price = orderbook.CurrentPrice,
+                InMoneyVolume = orderbook.CurrentInMoneyVolume,
+                OutOfTheMoneyVolume = orderbook.CurrentOutOfTheMoneyVolume,
+                InMoneyOrders = orderbook.InMoneyOrders
+                    .Select(Map),
+                OutOfTheMoneyOrders = orderbook.OutOfMoneyOrders
+                    .Select(Map)
+            };
+        }
+
+        private OrderbookResponse.Order Map(Order order)
+        {
+            return new OrderbookResponse.Order
+            {
+                Price = order.Price,
+                Investors = order.Investors,
+                Volume = order.Volume
+            };
         }
     }
 }

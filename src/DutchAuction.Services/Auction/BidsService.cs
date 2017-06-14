@@ -64,7 +64,7 @@ namespace DutchAuction.Services.Auction
                     return AuctionOperationResult.PriceIsLessThanCurrentBidPrice;
                 }
 
-                _bids[clientId] = bid.SetPrice(price);
+                bid.SetPrice(price);
             }
 
             return AuctionOperationResult.Ok;
@@ -79,24 +79,24 @@ namespace DutchAuction.Services.Auction
                     return AuctionOperationResult.BidNotFound;
                 }
 
-                bid.AssetVolumes.TryGetValue(assetId, out double oldVolume);
+                var oldVolume = bid.TryGetVolume(assetId);
 
                 if (oldVolume > volume)
                 {
                     return AuctionOperationResult.VolumeIsLessThanCurrentBidAssetVolume;
                 }
 
-                _bids[clientId] = bid.SetVolume(assetId, volume);
+                bid.SetVolume(assetId, volume);
             }
 
             return AuctionOperationResult.Ok;
         }
 
-        public void MarkBidAsPartiallyInMoney(string clientId, IDictionary<string, double> inMoneyBidAssetVolumes)
+        public void MarkBidAsPartiallyInMoney(string clientId, IEnumerable<KeyValuePair<string, double>> inMoneyBidAssetVolumes)
         {
             lock (_bids)
             {
-                _bids[clientId] = _bids[clientId].SetPartiallyInMoneyState(inMoneyBidAssetVolumes);
+                _bids[clientId].SetPartiallyInMoneyState(inMoneyBidAssetVolumes);
             }
         }
 
@@ -104,7 +104,7 @@ namespace DutchAuction.Services.Auction
         {
             lock (_bids)
             {
-                _bids[clientId] = _bids[clientId].SetInMoneyState();
+                _bids[clientId].SetInMoneyState();
             }
         }
 
@@ -112,7 +112,7 @@ namespace DutchAuction.Services.Auction
         {
             lock (_bids)
             {
-                _bids[clientId] = _bids[clientId].SetOutOfTheMoneyState();
+                _bids[clientId].SetOutOfTheMoneyState();
             }
         }
     }

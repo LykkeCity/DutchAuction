@@ -6,8 +6,8 @@ namespace DutchAuction.Core.Domain.Auction
     {
         string ClientId { get; }
         double Price { get; }
-        IReadOnlyDictionary<string, double> AssetVolumes { get; }
+        IReadOnlyCollection<KeyValuePair<string, double>> AssetVolumes { get; }
         BidState State { get; }
-        IReadOnlyDictionary<string, double> InMoneyAssetVolumes { get; }
+        IReadOnlyCollection<KeyValuePair<string, double>> InMoneyAssetVolumes { get; }
     }
 }
