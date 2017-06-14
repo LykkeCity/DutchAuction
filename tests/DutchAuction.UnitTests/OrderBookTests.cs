@@ -21,8 +21,8 @@ namespace DutchAuction.UnitTests
             _bidsServiceMock = new Mock<IBidsService>();
 
             _orderbookService = new OrderbookService(_assetExchangeServiceMock.Object, _bidsServiceMock.Object, 
-                totalAuctionVolume: 50000, 
-                minClosingBidCutoffVolume: 100);
+                totalAuctionVolumeLkk: 50000, 
+                minClosingBidCutoffVolumeLkk: 100);
         }
 
         [TestMethod]
