@@ -5,6 +5,7 @@ namespace DutchAuction.Api.Models
 {
     public class AuctionOperationResponse
     {
+        [Required]
         [EnumDataType(typeof(AuctionOperationResult))]
         public AuctionOperationResult Result { get; set; }
 

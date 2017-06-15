@@ -7,6 +7,7 @@ using AzureStorage.Tables;
 using Common.Log;
 using DutchAuction.Api.DependencyInjection;
 using DutchAuction.Api.Middleware;
+using DutchAuction.Api.Swagger;
 using DutchAuction.Core;
 using Lykke.AzureQueueIntegration;
 using Lykke.Logs;
@@ -62,6 +63,7 @@ namespace DutchAuction.Api
                     Title = "Dutch Auction API"
                 });
                 options.DescribeAllEnumsAsStrings();
+                options.EnableXmsEnumExtension();
 
                 //Determine base path for the application.
                 var basePath = PlatformServices.Default.Application.ApplicationBasePath;
