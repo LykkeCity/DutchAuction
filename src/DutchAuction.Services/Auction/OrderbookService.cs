@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using DutchAuction.Core;
 using DutchAuction.Core.Domain.Auction;
@@ -9,6 +10,12 @@ namespace DutchAuction.Services.Auction
 {
     public class OrderbookService : IOrderbookService
     {
+        private enum CalculationContinuation
+        {
+            RestartCurrentTestPriceLevel,
+            Continue
+        }
+
         private class BidVolume
         {
             public string ClientId { get; set; }
@@ -97,6 +104,7 @@ namespace DutchAuction.Services.Auction
         private double CalculateInMoneyOrderVolume(AuctionPriceLevel p, RenderContext context)
         {
             var volumeChf = 0d;
+            var volumeLkk = 0d;
 
             foreach (var bidVolume in p.BidVolumes)
             {
@@ -107,19 +115,19 @@ namespace DutchAuction.Services.Auction
                         break;
 
                     case BidState.PartiallyInMoney:
-                        volumeChf += bidVolume.Bid.InMoneyAssetVolumesLkk
-                            .Sum(a => _assetExchangeService.Exchange(a.Value, a.Key, "CHF"));
+                        volumeLkk += bidVolume.Bid.InMoneyAssetVolumesLkk.Sum(a => a.Value);
                         break;
                 }
             }
             
             // Convert volume to LKK
-            return volumeChf / context.AuctionPriceChf;
+            return volumeChf / context.AuctionPriceChf + volumeLkk;
         }
 
         private double CalculateOutOfTheMoneyOrderVolume(AuctionPriceLevel p, RenderContext context)
         {
             var volumeChf = 0d;
+            var volumeLkk = 0d;
 
             foreach (var bidVolume in p.BidVolumes)
             {
@@ -130,15 +138,14 @@ namespace DutchAuction.Services.Auction
                         break;
 
                     case BidState.PartiallyInMoney:
-                        volumeChf += bidVolume.VolumeChf -
-                                     bidVolume.Bid.InMoneyAssetVolumesLkk
-                                         .Sum(a => _assetExchangeService.Exchange(a.Value, a.Key, "CHF"));
+                        volumeLkk += bidVolume.VolumeChf / context.AuctionPriceChf -
+                                     bidVolume.Bid.InMoneyAssetVolumesLkk.Sum(a => a.Value);
                         break;
                 }
             }
 
             // Convert volume to LKK
-            return volumeChf / context.AuctionPriceChf;
+            return volumeChf / context.AuctionPriceChf + volumeLkk;
         }
 
         private void TrySaleWithPriceLevel(RenderContext context, int testPriceLevel, AuctionPriceLevel[] priceLevels)
@@ -160,22 +167,51 @@ namespace DutchAuction.Services.Auction
                     return;
                 }
 
-                SalePriceLevel(context, priceLevels[aggregationPriceLevel]);
+                var result = SalePriceLevel(context, priceLevels[aggregationPriceLevel]);
+
+                switch (result)
+                {
+                    case CalculationContinuation.RestartCurrentTestPriceLevel:
+                        aggregationPriceLevel = -1;
+                        context.AuctionInMoneyVolumeLkk = 0d;
+                        context.AuctionOutOfTheMoneyVolumeLkk = 0d;
+                        context.AuctionVolumeChf = 0d;
+                        break;
+
+                    case CalculationContinuation.Continue:
+                        break;
+
+                    default:
+                        throw new IndexOutOfRangeException($"Unknown CalculationContinuation value: {result}");
+                }
             }
         }
 
-        private void SalePriceLevel(RenderContext context, AuctionPriceLevel aggregationPriceLevel)
+        private CalculationContinuation SalePriceLevel(RenderContext context, AuctionPriceLevel aggregationPriceLevel)
         {
             if (!context.IsAllLotsSold)
             {
                 // Small bids first
                 var currentPriceBids = aggregationPriceLevel
                     .BidVolumes
-                    .OrderBy(b => b.VolumeChf);
+                    .OrderBy(b => b.VolumeChf)
+                    .ToArray();
 
                 foreach (var bidVolume in currentPriceBids)
                 {
-                    ProcessBid(context, bidVolume, aggregationPriceLevel);
+                    var result = ProcessBid(context, bidVolume, aggregationPriceLevel);
+
+                    switch (result)
+                    {
+                        case CalculationContinuation.RestartCurrentTestPriceLevel:
+                            return result;
+
+                        case CalculationContinuation.Continue:
+                            break;
+
+                        default:
+                            throw new IndexOutOfRangeException($"Unknown CalculationContinuation value: {result}");
+                    }
                 }
             }
             else
@@ -186,46 +222,46 @@ namespace DutchAuction.Services.Auction
                     _bidsService.MarkBidAsOutOfTheMoney(bid.ClientId, context.AuctionPriceChf);
                 }
             }
+
+            return CalculationContinuation.Continue;
         }
 
-        private void ProcessBid(RenderContext context, BidVolume bidVolume, AuctionPriceLevel aggregationPriceLevel)
+        private CalculationContinuation ProcessBid(RenderContext context, BidVolume bidVolume, AuctionPriceLevel aggregationPriceLevel)
         {
             if (context.IsAllLotsSold)
             {
                 context.AuctionOutOfTheMoneyVolumeLkk += bidVolume.VolumeChf / context.AuctionPriceChf;
                 _bidsService.MarkBidAsOutOfTheMoney(bidVolume.ClientId, context.AuctionPriceChf);
-                return;
+
+                return CalculationContinuation.Continue;
             }
 
             context.AuctionVolumeChf += bidVolume.VolumeChf;
 
-            while (true)
+            var nextAuctionVolumeLkk = context.AuctionVolumeChf / context.AuctionPriceChf;
+
+            if (nextAuctionVolumeLkk >= _totalAuctionVolumeLkk)
             {
-                var nextAuctionVolumeLkk = context.AuctionVolumeChf / context.AuctionPriceChf;
-
-                if (nextAuctionVolumeLkk >= _totalAuctionVolumeLkk)
+                if (!context.IsAutoFitPriceCase && aggregationPriceLevel.PriceChf > context.AuctionPriceChf)
                 {
-                    if (!context.IsAutoFitPriceCase && aggregationPriceLevel.PriceChf > context.AuctionPriceChf)
-                    {
-                        // All LKK sold, but we don`t reach bids in test price level yet,
-                        // Calculate price which allow to sale exactly all LKK to bids up to
-                        // current aggregation price level
-                        context.IsAutoFitPriceCase = true;
-                        context.AuctionPriceChf = context.PrevTestPriceLevelAuctionVolumeChf / _totalAuctionVolumeLkk;
-                        // And continue calculating from current bid (recalculate it again)
-                        continue;
-                    }
-
-                    ProcessClosingBid(context, bidVolume, nextAuctionVolumeLkk);
-
-                    break;
+                    // All LKK sold, but we don`t reach bids in test price level yet,
+                    // Calculate price which allow to sale exactly all LKK to bids up to
+                    // current aggregation price level
+                    context.IsAutoFitPriceCase = true;
+                    context.AuctionPriceChf = context.PrevTestPriceLevelAuctionVolumeChf / _totalAuctionVolumeLkk;
+                    // And continue calculating from the current aggregation price level (recalculate it again)
+                    return CalculationContinuation.RestartCurrentTestPriceLevel;
                 }
 
-                context.AuctionInMoneyVolumeLkk = nextAuctionVolumeLkk;
-                _bidsService.MarkBidAsInMoney(bidVolume.ClientId, context.AuctionPriceChf);
+                ProcessClosingBid(context, bidVolume, nextAuctionVolumeLkk);
 
-                break;
+                return CalculationContinuation.Continue;
             }
+
+            context.AuctionInMoneyVolumeLkk = nextAuctionVolumeLkk;
+            _bidsService.MarkBidAsInMoney(bidVolume.ClientId, context.AuctionPriceChf);
+
+            return CalculationContinuation.Continue;
         }
 
         private void ProcessClosingBid(RenderContext context, BidVolume bidVolume, double nextAuctionVolumeLkk)
@@ -244,8 +280,7 @@ namespace DutchAuction.Services.Auction
 
                     // Take every asset proportionaly to rest of the bid
                     var inMoneyBidRate = inMoneyBidVolumeLkk * context.AuctionPriceChf / bidVolume.VolumeChf;
-                    var inMoneyBidAssetVolumes = bidVolume.Bid.AssetVolumes
-                        .Select(i => new KeyValuePair<string, double>(i.Key, i.Value * inMoneyBidRate));
+                    var inMoneyBidAssetVolumes = bidVolume.Bid.AssetVolumes.Select(i => new KeyValuePair<string, double>(i.Key, i.Value * inMoneyBidRate));
 
                     _bidsService.MarkBidAsPartiallyInMoney(bidVolume.ClientId, context.AuctionPriceChf, inMoneyBidAssetVolumes);
                 }

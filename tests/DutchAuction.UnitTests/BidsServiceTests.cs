@@ -15,7 +15,7 @@ namespace DutchAuction.UnitTests
         [TestInitialize]
         public void InitializeTest()
         {
-            _bidsService = new BidsService();
+            _bidsService = new BidsService(null);
         }
 
         [TestMethod]

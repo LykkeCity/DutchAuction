@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
+using DutchAuction.Core.Services.Assets;
 
 namespace DutchAuction.Core.Domain.Auction
 {
@@ -79,7 +81,7 @@ namespace DutchAuction.Core.Domain.Auction
             _inMoneyAsssetVolumesLkk.Clear();
         }
 
-        public void SetInMoneyState(double currentLkkPriceChf)
+        public void SetInMoneyState(IAssetExchangeService assetExchangeService, double currentLkkPriceChf)
         {
             LkkPriceChf = currentLkkPriceChf;
             State = BidState.InMoney;
@@ -89,14 +91,14 @@ namespace DutchAuction.Core.Domain.Auction
 
             foreach (var item in AssetVolumes)
             {
-                var lkkItem = new KeyValuePair<string, double>(item.Key, item.Value / currentLkkPriceChf);
+                var lkkItem = new KeyValuePair<string, double>(item.Key, assetExchangeService.Exchange(item.Value, item.Key, "CHF") / currentLkkPriceChf);
 
                 _assetVolumesLkk.Add(lkkItem);
                 _inMoneyAsssetVolumesLkk.Add(lkkItem);
             }
         }
 
-        public void SetOutOfTheMoneyState(double currentLkkPriceChf)
+        public void SetOutOfTheMoneyState(IAssetExchangeService assetExchangeService, double currentLkkPriceChf)
         {
             LkkPriceChf = currentLkkPriceChf;
             State = BidState.OutOfTheMoney;
@@ -106,13 +108,12 @@ namespace DutchAuction.Core.Domain.Auction
 
             foreach (var item in AssetVolumes)
             {
-                var lkkItem = new KeyValuePair<string, double>(item.Key, item.Value / currentLkkPriceChf);
-
-                _assetVolumesLkk.Add(lkkItem);
+                _assetVolumesLkk.Add(new KeyValuePair<string, double>(item.Key, assetExchangeService.Exchange(item.Value, item.Key, "CHF") / currentLkkPriceChf));
+                _inMoneyAsssetVolumesLkk.Add(new KeyValuePair<string, double>(item.Key, 0));
             }
         }
 
-        public void SetPartiallyInMoneyState(double currentLkkPriceChf, IEnumerable<KeyValuePair<string, double>> inMoneyAssetVolumesLkk)
+        public void SetPartiallyInMoneyState(IAssetExchangeService assetExchangeService, double currentLkkPriceChf, IEnumerable<KeyValuePair<string, double>> inMoneyAssetVolumes)
         {
             LkkPriceChf = currentLkkPriceChf;
             State = BidState.PartiallyInMoney;
@@ -122,12 +123,13 @@ namespace DutchAuction.Core.Domain.Auction
 
             foreach (var item in AssetVolumes)
             {
-                var lkkItem = new KeyValuePair<string, double>(item.Key, item.Value / currentLkkPriceChf);
+                var lkkItem = new KeyValuePair<string, double>(item.Key, assetExchangeService.Exchange(item.Value, item.Key, "CHF") / currentLkkPriceChf);
 
                 _assetVolumesLkk.Add(lkkItem);
             }
 
-            _inMoneyAsssetVolumesLkk.AddRange(inMoneyAssetVolumesLkk);
+            _inMoneyAsssetVolumesLkk.AddRange(inMoneyAssetVolumes
+                .Select(item => new KeyValuePair<string, double>(item.Key, assetExchangeService.Exchange(item.Value, item.Key, "CHF") / currentLkkPriceChf)));
         }
     }
 }

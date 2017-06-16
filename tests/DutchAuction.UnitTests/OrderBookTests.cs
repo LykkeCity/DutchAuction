@@ -25,21 +25,25 @@ namespace DutchAuction.UnitTests
             _assetExchangeServiceMock = new Mock<IAssetExchangeService>();
             _bidsServiceMock = new Mock<IBidsService>();
 
-            _bids = new List<Bid>();
+            _assetExchangeServiceMock
+                .Setup(s => s.Exchange(It.IsAny<double>(), It.IsAny<string>(), It.IsAny<string>()))
+                .Returns<double, string, string>((amount, baseAssetId, targetAssetId) => amount);
 
+            _bids = new List<Bid>();
+            
             _bidsServiceMock
                 .Setup(s => s.GetAll())
                 .Returns(() => _bids.Cast<IBid>().ToArray());
             _bidsServiceMock
                 .Setup(s => s.MarkBidAsInMoney(It.IsAny<string>(), It.IsAny<double>()))
-                .Callback<string, double>((clientId, lkkPrice) => _bids.Single(b => b.ClientId == clientId).SetInMoneyState(lkkPrice));
+                .Callback<string, double>((clientId, lkkPrice) => _bids.Single(b => b.ClientId == clientId).SetInMoneyState(_assetExchangeServiceMock.Object, lkkPrice));
             _bidsServiceMock
                 .Setup(s => s.MarkBidAsOutOfTheMoney(It.IsAny<string>(), It.IsAny<double>()))
-                .Callback<string, double>((clientId, lkkPrice) => _bids.Single(b => b.ClientId == clientId).SetOutOfTheMoneyState(lkkPrice));
+                .Callback<string, double>((clientId, lkkPrice) => _bids.Single(b => b.ClientId == clientId).SetOutOfTheMoneyState(_assetExchangeServiceMock.Object, lkkPrice));
             _bidsServiceMock
                 .Setup(s => s.MarkBidAsPartiallyInMoney(It.IsAny<string>(), It.IsAny<double>(), It.IsAny<IEnumerable<KeyValuePair<string, double>>>()))
                 .Callback<string, double, IEnumerable<KeyValuePair<string, double>>>((clientId, lkkPrice, outOfTheMoneyAssetValues) => 
-                    _bids.Single(b => b.ClientId == clientId).SetPartiallyInMoneyState(lkkPrice, outOfTheMoneyAssetValues));
+                    _bids.Single(b => b.ClientId == clientId).SetPartiallyInMoneyState(_assetExchangeServiceMock.Object, lkkPrice, outOfTheMoneyAssetValues));
 
             _orderbookService = new OrderbookService(_assetExchangeServiceMock.Object, _bidsServiceMock.Object, 
                 totalAuctionVolumeLkk: 5000, 
@@ -106,6 +110,35 @@ namespace DutchAuction.UnitTests
             Assert.AreEqual(BidState.InMoney, _bids[1].State);
             Assert.AreEqual(BidState.InMoney, _bids[2].State);
             Assert.AreEqual(BidState.InMoney, _bids[3].State);
+
+            Assert.AreEqual(1.2, _bids[0].LkkPriceChf, Delta);
+            Assert.AreEqual(1.2, _bids[1].LkkPriceChf, Delta);
+            Assert.AreEqual(1.2, _bids[2].LkkPriceChf, Delta);
+            Assert.AreEqual(1.2, _bids[3].LkkPriceChf, Delta);
+
+            Assert.AreEqual(2, _bids[0].AssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[1].AssetVolumesLkk.Count);
+            Assert.AreEqual(2, _bids[2].AssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[3].AssetVolumesLkk.Count);
+
+            Assert.AreEqual(100 / 1.2, _bids[0].AssetVolumesLkk.Single(a => a.Key == "USD").Value, Delta);
+            Assert.AreEqual(250 / 1.2, _bids[0].AssetVolumesLkk.Single(a => a.Key == "CHF").Value, Delta);
+            Assert.AreEqual(200 / 1.2, _bids[1].AssetVolumesLkk.Single().Value);
+            Assert.AreEqual(300 / 1.2, _bids[2].AssetVolumesLkk.Single(a => a.Key == "USD").Value, Delta);
+            Assert.AreEqual(150 / 1.2, _bids[2].AssetVolumesLkk.Single(a => a.Key == "EUR").Value, Delta);
+            Assert.AreEqual(300 / 1.2, _bids[3].AssetVolumesLkk.Single().Value);
+
+            Assert.AreEqual(2, _bids[0].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[1].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(2, _bids[2].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[3].InMoneyAssetVolumesLkk.Count);
+
+            Assert.AreEqual(100 / 1.2, _bids[0].InMoneyAssetVolumesLkk.Single(a => a.Key == "USD").Value, Delta);
+            Assert.AreEqual(250 / 1.2, _bids[0].InMoneyAssetVolumesLkk.Single(a => a.Key == "CHF").Value, Delta);
+            Assert.AreEqual(200 / 1.2, _bids[1].InMoneyAssetVolumesLkk.Single().Value);
+            Assert.AreEqual(300 / 1.2, _bids[2].InMoneyAssetVolumesLkk.Single(a => a.Key == "USD").Value, Delta);
+            Assert.AreEqual(150 / 1.2, _bids[2].InMoneyAssetVolumesLkk.Single(a => a.Key == "EUR").Value, Delta);
+            Assert.AreEqual(300 / 1.2, _bids[3].InMoneyAssetVolumesLkk.Single().Value);
         }
 
         [TestMethod]
@@ -158,16 +191,53 @@ namespace DutchAuction.UnitTests
             Assert.AreEqual(BidState.InMoney, _bids[3].State);
             Assert.AreEqual(BidState.InMoney, _bids[4].State);
             Assert.AreEqual(BidState.InMoney, _bids[5].State);
+
+            Assert.AreEqual(0.5, _bids[0].LkkPriceChf, Delta);
+            Assert.AreEqual(0.5, _bids[1].LkkPriceChf, Delta);
+            Assert.AreEqual(0.5, _bids[2].LkkPriceChf, Delta);
+            Assert.AreEqual(0.5, _bids[3].LkkPriceChf, Delta);
+            Assert.AreEqual(0.5, _bids[4].LkkPriceChf, Delta);
+            Assert.AreEqual(0.5, _bids[5].LkkPriceChf, Delta);
+
+            Assert.AreEqual(2, _bids[0].AssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[1].AssetVolumesLkk.Count);
+            Assert.AreEqual(2, _bids[2].AssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[3].AssetVolumesLkk.Count);
+            Assert.AreEqual(2, _bids[4].AssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[5].AssetVolumesLkk.Count);
+
+            Assert.AreEqual(250 / 0.5, _bids[0].AssetVolumesLkk.Single(a => a.Key == "USD").Value, Delta);
+            Assert.AreEqual(125 / 0.5, _bids[0].AssetVolumesLkk.Single(a => a.Key == "CHF").Value, Delta);
+            Assert.AreEqual(125 / 0.5, _bids[1].AssetVolumesLkk.Single().Value);
+            Assert.AreEqual(300 / 0.5, _bids[2].AssetVolumesLkk.Single(a => a.Key == "USD").Value, Delta);
+            Assert.AreEqual(150 / 0.5, _bids[2].AssetVolumesLkk.Single(a => a.Key == "EUR").Value, Delta);
+            Assert.AreEqual(400 / 0.5, _bids[3].AssetVolumesLkk.Single().Value);
+            Assert.AreEqual(250 / 0.5, _bids[4].AssetVolumesLkk.Single(a => a.Key == "USD").Value, Delta);
+            Assert.AreEqual(500 / 0.5, _bids[4].AssetVolumesLkk.Single(a => a.Key == "EUR").Value, Delta);
+            Assert.AreEqual(400 / 0.5, _bids[5].AssetVolumesLkk.Single().Value);
+
+            Assert.AreEqual(2, _bids[0].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[1].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(2, _bids[2].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[3].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(2, _bids[4].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[5].InMoneyAssetVolumesLkk.Count);
+
+            Assert.AreEqual(250 / 0.5, _bids[0].InMoneyAssetVolumesLkk.Single(a => a.Key == "USD").Value, Delta);
+            Assert.AreEqual(125 / 0.5, _bids[0].InMoneyAssetVolumesLkk.Single(a => a.Key == "CHF").Value, Delta);
+            Assert.AreEqual(125 / 0.5, _bids[1].InMoneyAssetVolumesLkk.Single().Value);
+            Assert.AreEqual(300 / 0.5, _bids[2].InMoneyAssetVolumesLkk.Single(a => a.Key == "USD").Value, Delta);
+            Assert.AreEqual(150 / 0.5, _bids[2].InMoneyAssetVolumesLkk.Single(a => a.Key == "EUR").Value, Delta);
+            Assert.AreEqual(400 / 0.5, _bids[3].InMoneyAssetVolumesLkk.Single().Value);
+            Assert.AreEqual(250 / 0.5, _bids[4].InMoneyAssetVolumesLkk.Single(a => a.Key == "USD").Value, Delta);
+            Assert.AreEqual(500 / 0.5, _bids[4].InMoneyAssetVolumesLkk.Single(a => a.Key == "EUR").Value, Delta);
+            Assert.AreEqual(400 / 0.5, _bids[5].InMoneyAssetVolumesLkk.Single().Value);
         }
 
         [TestMethod]
         public void Is_orderbook_correct_when_all_lkk_sold_and_not_all_bids_fit_in()
         {
             // Asset
-            _assetExchangeServiceMock
-                .Setup(s => s.Exchange(It.IsAny<double>(), It.IsAny<string>(), It.IsAny<string>()))
-                .Returns<double, string, string>((amount, baseAssetId, targetAssetId) => amount);
-
             _bids.AddRange(new[]
             {
                 new Bid("client1", 1.5, "USD", 250).SetVolumeFluently("CHF", 125),
@@ -222,23 +292,67 @@ namespace DutchAuction.UnitTests
             Assert.AreEqual(BidState.InMoney, _bids[3].State);
             Assert.AreEqual(BidState.InMoney, _bids[4].State);
             Assert.AreEqual(BidState.PartiallyInMoney, _bids[5].State);
-            Assert.AreEqual(2, _bids[5].InMoneyAssetVolumesLkk.Count);
-            Assert.AreEqual(1, _bids[5].InMoneyAssetVolumesLkk.Count(v => v.Key == "EUR"));
-            Assert.AreEqual(1, _bids[5].InMoneyAssetVolumesLkk.Count(v => v.Key == "USD"));
-            Assert.AreEqual(400d / 880d * 800d, _bids[5].InMoneyAssetVolumesLkk.Single(v => v.Key == "EUR").Value, Delta);
-            Assert.AreEqual(400d / 880d * 80d, _bids[5].InMoneyAssetVolumesLkk.Single(v => v.Key == "USD").Value, Delta);
             Assert.AreEqual(BidState.OutOfTheMoney, _bids[6].State);
             Assert.AreEqual(BidState.OutOfTheMoney, _bids[7].State);
+
+            Assert.AreEqual(0.5, _bids[0].LkkPriceChf, Delta);
+            Assert.AreEqual(0.5, _bids[1].LkkPriceChf, Delta);
+            Assert.AreEqual(0.5, _bids[2].LkkPriceChf, Delta);
+            Assert.AreEqual(0.5, _bids[3].LkkPriceChf, Delta);
+            Assert.AreEqual(0.5, _bids[4].LkkPriceChf, Delta);
+            Assert.AreEqual(0.5, _bids[5].LkkPriceChf, Delta);
+            Assert.AreEqual(0.5, _bids[6].LkkPriceChf, Delta);
+            Assert.AreEqual(0.5, _bids[7].LkkPriceChf, Delta);
+            
+            Assert.AreEqual(2, _bids[0].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[1].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(2, _bids[2].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[3].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(2, _bids[4].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(2, _bids[5].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[6].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[7].InMoneyAssetVolumesLkk.Count);
+
+            Assert.AreEqual(250 / 0.5, _bids[0].InMoneyAssetVolumesLkk.Single(v => v.Key == "USD").Value, Delta);
+            Assert.AreEqual(125 / 0.5, _bids[0].InMoneyAssetVolumesLkk.Single(v => v.Key == "CHF").Value, Delta);
+            Assert.AreEqual(125 / 0.5, _bids[1].InMoneyAssetVolumesLkk.Single().Value, Delta);
+            Assert.AreEqual(300 / 0.5, _bids[2].InMoneyAssetVolumesLkk.Single(v => v.Key == "USD").Value, Delta);
+            Assert.AreEqual(150 / 0.5, _bids[2].InMoneyAssetVolumesLkk.Single(v => v.Key == "EUR").Value, Delta);
+            Assert.AreEqual(400 / 0.5, _bids[3].InMoneyAssetVolumesLkk.Single().Value, Delta);
+            Assert.AreEqual(250 / 0.5, _bids[4].InMoneyAssetVolumesLkk.Single(v => v.Key == "USD").Value, Delta);
+            Assert.AreEqual(500 / 0.5, _bids[4].InMoneyAssetVolumesLkk.Single(v => v.Key == "EUR").Value, Delta);
+            Assert.AreEqual(400d / 880d * 800d / 0.5, _bids[5].InMoneyAssetVolumesLkk.Single(v => v.Key == "EUR").Value, Delta);
+            Assert.AreEqual(400d / 880d * 80d / 0.5, _bids[5].InMoneyAssetVolumesLkk.Single(v => v.Key == "USD").Value, Delta);
+            Assert.AreEqual(0, _bids[6].InMoneyAssetVolumesLkk.Single().Value, Delta);
+            Assert.AreEqual(0, _bids[7].InMoneyAssetVolumesLkk.Single().Value, Delta);
+
+            Assert.AreEqual(2, _bids[0].AssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[1].AssetVolumesLkk.Count);
+            Assert.AreEqual(2, _bids[2].AssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[3].AssetVolumesLkk.Count);
+            Assert.AreEqual(2, _bids[4].AssetVolumesLkk.Count);
+            Assert.AreEqual(2, _bids[5].AssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[6].AssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[7].AssetVolumesLkk.Count);
+
+            Assert.AreEqual(250 / 0.5, _bids[0].AssetVolumesLkk.Single(v => v.Key == "USD").Value, Delta);
+            Assert.AreEqual(125 / 0.5, _bids[0].AssetVolumesLkk.Single(v => v.Key == "CHF").Value, Delta);
+            Assert.AreEqual(125 / 0.5, _bids[1].AssetVolumesLkk.Single().Value, Delta);
+            Assert.AreEqual(300 / 0.5, _bids[2].AssetVolumesLkk.Single(v => v.Key == "USD").Value, Delta);
+            Assert.AreEqual(150 / 0.5, _bids[2].AssetVolumesLkk.Single(v => v.Key == "EUR").Value, Delta);
+            Assert.AreEqual(400 / 0.5, _bids[3].AssetVolumesLkk.Single().Value, Delta);
+            Assert.AreEqual(250 / 0.5, _bids[4].AssetVolumesLkk.Single(v => v.Key == "USD").Value, Delta);
+            Assert.AreEqual(500 / 0.5, _bids[4].AssetVolumesLkk.Single(v => v.Key == "EUR").Value, Delta);
+            Assert.AreEqual(800 / 0.5, _bids[5].AssetVolumesLkk.Single(v => v.Key == "EUR").Value, Delta);
+            Assert.AreEqual(80 / 0.5, _bids[5].AssetVolumesLkk.Single(v => v.Key == "USD").Value, Delta);
+            Assert.AreEqual(1000 / 0.5, _bids[6].AssetVolumesLkk.Single().Value, Delta);
+            Assert.AreEqual(100 / 0.5, _bids[7].AssetVolumesLkk.Single().Value, Delta);
         }
 
         [TestMethod]
         public void Is_orderbook_correct_when_all_lkk_sold_and_closing_bid_cut_off_to_small()
         {
             // Asset
-            _assetExchangeServiceMock
-                .Setup(s => s.Exchange(It.IsAny<double>(), It.IsAny<string>(), It.IsAny<string>()))
-                .Returns<double, string, string>((amount, baseAssetId, targetAssetId) => amount);
-
             _bids.AddRange(new[]
             {
                 new Bid("client1", 1.5, "USD", 250).SetVolumeFluently("CHF", 125),
@@ -296,16 +410,65 @@ namespace DutchAuction.UnitTests
             Assert.AreEqual(BidState.OutOfTheMoney, _bids[5].State);
             Assert.AreEqual(BidState.OutOfTheMoney, _bids[6].State);
             Assert.AreEqual(BidState.OutOfTheMoney, _bids[7].State);
+
+            Assert.AreEqual(0.5, _bids[0].LkkPriceChf, Delta);
+            Assert.AreEqual(0.5, _bids[1].LkkPriceChf, Delta);
+            Assert.AreEqual(0.5, _bids[2].LkkPriceChf, Delta);
+            Assert.AreEqual(0.5, _bids[3].LkkPriceChf, Delta);
+            Assert.AreEqual(0.5, _bids[4].LkkPriceChf, Delta);
+            Assert.AreEqual(0.5, _bids[5].LkkPriceChf, Delta);
+            Assert.AreEqual(0.5, _bids[6].LkkPriceChf, Delta);
+            Assert.AreEqual(0.5, _bids[7].LkkPriceChf, Delta);
+
+            Assert.AreEqual(2, _bids[0].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[1].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(2, _bids[2].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[3].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(2, _bids[4].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(2, _bids[5].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[6].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[7].InMoneyAssetVolumesLkk.Count);
+
+            Assert.AreEqual(250 / 0.5, _bids[0].InMoneyAssetVolumesLkk.Single(v => v.Key == "USD").Value, Delta);
+            Assert.AreEqual(125 / 0.5, _bids[0].InMoneyAssetVolumesLkk.Single(v => v.Key == "CHF").Value, Delta);
+            Assert.AreEqual(125 / 0.5, _bids[1].InMoneyAssetVolumesLkk.Single().Value, Delta);
+            Assert.AreEqual(300 / 0.5, _bids[2].InMoneyAssetVolumesLkk.Single(v => v.Key == "USD").Value, Delta);
+            Assert.AreEqual(150 / 0.5, _bids[2].InMoneyAssetVolumesLkk.Single(v => v.Key == "EUR").Value, Delta);
+            Assert.AreEqual(400 / 0.5, _bids[3].InMoneyAssetVolumesLkk.Single().Value, Delta);
+            Assert.AreEqual(250 / 0.5, _bids[4].InMoneyAssetVolumesLkk.Single(v => v.Key == "USD").Value, Delta);
+            Assert.AreEqual(895 / 0.5, _bids[4].InMoneyAssetVolumesLkk.Single(v => v.Key == "EUR").Value, Delta);
+            Assert.AreEqual(0 / 0.5, _bids[5].InMoneyAssetVolumesLkk.Single(v => v.Key == "EUR").Value, Delta);
+            Assert.AreEqual(0 / 0.5, _bids[5].InMoneyAssetVolumesLkk.Single(v => v.Key == "USD").Value, Delta);
+            Assert.AreEqual(0, _bids[6].InMoneyAssetVolumesLkk.Single().Value, Delta);
+            Assert.AreEqual(0, _bids[7].InMoneyAssetVolumesLkk.Single().Value, Delta);
+
+            Assert.AreEqual(2, _bids[0].AssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[1].AssetVolumesLkk.Count);
+            Assert.AreEqual(2, _bids[2].AssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[3].AssetVolumesLkk.Count);
+            Assert.AreEqual(2, _bids[4].AssetVolumesLkk.Count);
+            Assert.AreEqual(2, _bids[5].AssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[6].AssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[7].AssetVolumesLkk.Count);
+
+            Assert.AreEqual(250 / 0.5, _bids[0].AssetVolumesLkk.Single(v => v.Key == "USD").Value, Delta);
+            Assert.AreEqual(125 / 0.5, _bids[0].AssetVolumesLkk.Single(v => v.Key == "CHF").Value, Delta);
+            Assert.AreEqual(125 / 0.5, _bids[1].AssetVolumesLkk.Single().Value, Delta);
+            Assert.AreEqual(300 / 0.5, _bids[2].AssetVolumesLkk.Single(v => v.Key == "USD").Value, Delta);
+            Assert.AreEqual(150 / 0.5, _bids[2].AssetVolumesLkk.Single(v => v.Key == "EUR").Value, Delta);
+            Assert.AreEqual(400 / 0.5, _bids[3].AssetVolumesLkk.Single().Value, Delta);
+            Assert.AreEqual(250 / 0.5, _bids[4].AssetVolumesLkk.Single(v => v.Key == "USD").Value, Delta);
+            Assert.AreEqual(895 / 0.5, _bids[4].AssetVolumesLkk.Single(v => v.Key == "EUR").Value, Delta);
+            Assert.AreEqual(800 / 0.5, _bids[5].AssetVolumesLkk.Single(v => v.Key == "EUR").Value, Delta);
+            Assert.AreEqual(700 / 0.5, _bids[5].AssetVolumesLkk.Single(v => v.Key == "USD").Value, Delta);
+            Assert.AreEqual(2000 / 0.5, _bids[6].AssetVolumesLkk.Single().Value, Delta);
+            Assert.AreEqual(100 / 0.5, _bids[7].AssetVolumesLkk.Single().Value, Delta);
         }
 
         [TestMethod]
         public void Is_orderbook_correct_when_all_lkk_sold_and_closing_bid_to_small()
         {
             // Asset
-            _assetExchangeServiceMock
-                .Setup(s => s.Exchange(It.IsAny<double>(), It.IsAny<string>(), It.IsAny<string>()))
-                .Returns<double, string, string>((amount, baseAssetId, targetAssetId) => amount);
-
             _bids.AddRange(new[]
             {
                 new Bid("client1", 1.5, "USD", 250).SetVolumeFluently("CHF", 125),
@@ -363,16 +526,63 @@ namespace DutchAuction.UnitTests
             Assert.AreEqual(BidState.InMoney, _bids[5].State);
             Assert.AreEqual(BidState.OutOfTheMoney, _bids[6].State);
             Assert.AreEqual(BidState.OutOfTheMoney, _bids[7].State);
+
+            Assert.AreEqual(0.5, _bids[0].LkkPriceChf, Delta);
+            Assert.AreEqual(0.5, _bids[1].LkkPriceChf, Delta);
+            Assert.AreEqual(0.5, _bids[2].LkkPriceChf, Delta);
+            Assert.AreEqual(0.5, _bids[3].LkkPriceChf, Delta);
+            Assert.AreEqual(0.5, _bids[4].LkkPriceChf, Delta);
+            Assert.AreEqual(0.5, _bids[5].LkkPriceChf, Delta);
+            Assert.AreEqual(0.5, _bids[6].LkkPriceChf, Delta);
+            Assert.AreEqual(0.5, _bids[7].LkkPriceChf, Delta);
+
+            Assert.AreEqual(2, _bids[0].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[1].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(2, _bids[2].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(2, _bids[3].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[4].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[5].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[6].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[7].InMoneyAssetVolumesLkk.Count);
+
+            Assert.AreEqual(250 / 0.5, _bids[0].InMoneyAssetVolumesLkk.Single(v => v.Key == "USD").Value, Delta);
+            Assert.AreEqual(125 / 0.5, _bids[0].InMoneyAssetVolumesLkk.Single(v => v.Key == "CHF").Value, Delta);
+            Assert.AreEqual(125 / 0.5, _bids[1].InMoneyAssetVolumesLkk.Single().Value, Delta);
+            Assert.AreEqual(300 / 0.5, _bids[2].InMoneyAssetVolumesLkk.Single(v => v.Key == "USD").Value, Delta);
+            Assert.AreEqual(150 / 0.5, _bids[2].InMoneyAssetVolumesLkk.Single(v => v.Key == "EUR").Value, Delta);
+            Assert.AreEqual(660 / 0.5, _bids[3].InMoneyAssetVolumesLkk.Single(v => v.Key == "USD").Value, Delta);
+            Assert.AreEqual(880 / 0.5, _bids[3].InMoneyAssetVolumesLkk.Single(v => v.Key == "EUR").Value, Delta);
+            Assert.AreEqual(5 / 0.5, _bids[4].InMoneyAssetVolumesLkk.Single().Value, Delta);
+            Assert.AreEqual(5 / 0.5, _bids[5].InMoneyAssetVolumesLkk.Single().Value, Delta);
+            Assert.AreEqual(0, _bids[6].InMoneyAssetVolumesLkk.Single().Value, Delta);
+            Assert.AreEqual(0, _bids[7].InMoneyAssetVolumesLkk.Single().Value, Delta);
+
+            Assert.AreEqual(2, _bids[0].AssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[1].AssetVolumesLkk.Count);
+            Assert.AreEqual(2, _bids[2].AssetVolumesLkk.Count);
+            Assert.AreEqual(2, _bids[3].AssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[4].AssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[5].AssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[6].AssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[7].AssetVolumesLkk.Count);
+
+            Assert.AreEqual(250 / 0.5, _bids[0].AssetVolumesLkk.Single(v => v.Key == "USD").Value, Delta);
+            Assert.AreEqual(125 / 0.5, _bids[0].AssetVolumesLkk.Single(v => v.Key == "CHF").Value, Delta);
+            Assert.AreEqual(125 / 0.5, _bids[1].AssetVolumesLkk.Single().Value, Delta);
+            Assert.AreEqual(300 / 0.5, _bids[2].AssetVolumesLkk.Single(v => v.Key == "USD").Value, Delta);
+            Assert.AreEqual(150 / 0.5, _bids[2].AssetVolumesLkk.Single(v => v.Key == "EUR").Value, Delta);
+            Assert.AreEqual(660 / 0.5, _bids[3].AssetVolumesLkk.Single(v => v.Key == "USD").Value, Delta);
+            Assert.AreEqual(880 / 0.5, _bids[3].AssetVolumesLkk.Single(v => v.Key == "EUR").Value, Delta);
+            Assert.AreEqual(5 / 0.5, _bids[4].AssetVolumesLkk.Single().Value, Delta);
+            Assert.AreEqual(5 / 0.5, _bids[5].AssetVolumesLkk.Single().Value, Delta);
+            Assert.AreEqual(2000 / 0.5, _bids[6].AssetVolumesLkk.Single().Value, Delta);
+            Assert.AreEqual(100 / 0.5, _bids[7].AssetVolumesLkk.Single().Value, Delta);
         }
 
         [TestMethod]
         public void Is_orderbook_correct_when_all_lkk_sold_to_high_price_orders_with_lower_lkk_price()
         {
             // Asset
-            _assetExchangeServiceMock
-                .Setup(s => s.Exchange(It.IsAny<double>(), It.IsAny<string>(), It.IsAny<string>()))
-                .Returns<double, string, string>((amount, baseAssetId, targetAssetId) => amount);
-
             _bids.AddRange(new[]
             {
                 new Bid("client1", 2.2, "USD", 1500),
@@ -424,6 +634,50 @@ namespace DutchAuction.UnitTests
             Assert.AreEqual(BidState.OutOfTheMoney, _bids[4].State);
             Assert.AreEqual(BidState.OutOfTheMoney, _bids[5].State);
             Assert.AreEqual(BidState.OutOfTheMoney, _bids[6].State);
+
+            Assert.AreEqual(0.9, _bids[0].LkkPriceChf, Delta);
+            Assert.AreEqual(0.9, _bids[1].LkkPriceChf, Delta);
+            Assert.AreEqual(0.9, _bids[2].LkkPriceChf, Delta);
+            Assert.AreEqual(0.9, _bids[3].LkkPriceChf, Delta);
+            Assert.AreEqual(0.9, _bids[4].LkkPriceChf, Delta);
+            Assert.AreEqual(0.9, _bids[5].LkkPriceChf, Delta);
+            Assert.AreEqual(0.9, _bids[6].LkkPriceChf, Delta);
+
+            Assert.AreEqual(1, _bids[0].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(2, _bids[1].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(2, _bids[2].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[3].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[4].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[5].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[6].InMoneyAssetVolumesLkk.Count);
+
+            Assert.AreEqual(1500 / 0.9, _bids[0].InMoneyAssetVolumesLkk.Single().Value, Delta);
+            Assert.AreEqual(1000 / 0.9, _bids[1].InMoneyAssetVolumesLkk.Single(v => v.Key == "USD").Value, Delta);
+            Assert.AreEqual(500 / 0.9, _bids[1].InMoneyAssetVolumesLkk.Single(v => v.Key == "CHF").Value, Delta);
+            Assert.AreEqual(800 / 0.9, _bids[2].InMoneyAssetVolumesLkk.Single(v => v.Key == "USD").Value, Delta);
+            Assert.AreEqual(600 / 0.9, _bids[2].InMoneyAssetVolumesLkk.Single(v => v.Key == "EUR").Value, Delta);
+            Assert.AreEqual(100 / 0.9, _bids[3].InMoneyAssetVolumesLkk.Single().Value, Delta);
+            Assert.AreEqual(0, _bids[4].InMoneyAssetVolumesLkk.Single().Value, Delta);
+            Assert.AreEqual(0, _bids[5].InMoneyAssetVolumesLkk.Single().Value, Delta);
+            Assert.AreEqual(0, _bids[6].InMoneyAssetVolumesLkk.Single().Value, Delta);
+
+            Assert.AreEqual(1, _bids[0].AssetVolumesLkk.Count);
+            Assert.AreEqual(2, _bids[1].AssetVolumesLkk.Count);
+            Assert.AreEqual(2, _bids[2].AssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[3].AssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[4].AssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[5].AssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[6].AssetVolumesLkk.Count);
+
+            Assert.AreEqual(1500 / 0.9, _bids[0].AssetVolumesLkk.Single().Value, Delta);
+            Assert.AreEqual(1000 / 0.9, _bids[1].AssetVolumesLkk.Single(v => v.Key == "USD").Value, Delta);
+            Assert.AreEqual(500 / 0.9, _bids[1].AssetVolumesLkk.Single(v => v.Key == "CHF").Value, Delta);
+            Assert.AreEqual(800 / 0.9, _bids[2].AssetVolumesLkk.Single(v => v.Key == "USD").Value, Delta);
+            Assert.AreEqual(600 / 0.9, _bids[2].AssetVolumesLkk.Single(v => v.Key == "EUR").Value, Delta);
+            Assert.AreEqual(100 / 0.9, _bids[3].AssetVolumesLkk.Single().Value, Delta);
+            Assert.AreEqual(500 / 0.9, _bids[4].AssetVolumesLkk.Single().Value, Delta);
+            Assert.AreEqual(250 / 0.9, _bids[5].AssetVolumesLkk.Single().Value, Delta);
+            Assert.AreEqual(100 / 0.9, _bids[6].AssetVolumesLkk.Single().Value, Delta);
         }
     }
 }

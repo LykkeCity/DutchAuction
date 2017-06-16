@@ -1,17 +1,20 @@
 using System.Collections.Generic;
 using System.Linq;
 using DutchAuction.Core.Domain.Auction;
+using DutchAuction.Core.Services.Assets;
 using DutchAuction.Core.Services.Auction;
 
 namespace DutchAuction.Services.Auction
 {
     public class BidsService : IBidsService
     {
+        private readonly IAssetExchangeService _assetExchangeService;
 
         private readonly Dictionary<string, Bid> _bids;
         
-        public BidsService()
+        public BidsService(IAssetExchangeService assetExchangeService)
         {
+            _assetExchangeService = assetExchangeService;
             _bids = new Dictionary<string, Bid>();
         }
 
@@ -96,7 +99,7 @@ namespace DutchAuction.Services.Auction
         {
             lock (_bids)
             {
-                _bids[clientId].SetPartiallyInMoneyState(currentLkkPriceChf, inMoneyBidAssetVolumes);
+                _bids[clientId].SetPartiallyInMoneyState(_assetExchangeService, currentLkkPriceChf, inMoneyBidAssetVolumes);
             }
         }
 
@@ -104,7 +107,7 @@ namespace DutchAuction.Services.Auction
         {
             lock (_bids)
             {
-                _bids[clientId].SetInMoneyState(currentLkkPriceChf);
+                _bids[clientId].SetInMoneyState(_assetExchangeService, currentLkkPriceChf);
             }
         }
 
@@ -112,7 +115,7 @@ namespace DutchAuction.Services.Auction
         {
             lock (_bids)
             {
-                _bids[clientId].SetOutOfTheMoneyState(currentLkkPriceChf);
+                _bids[clientId].SetOutOfTheMoneyState(_assetExchangeService, currentLkkPriceChf);
             }
         }
     }
