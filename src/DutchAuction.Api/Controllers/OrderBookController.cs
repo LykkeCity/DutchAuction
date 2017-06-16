@@ -33,9 +33,9 @@ namespace DutchAuction.Api.Controllers
 
             return new OrderbookResponse
             {
-                Price = orderbook.CurrentPrice,
-                InMoneyVolume = orderbook.CurrentInMoneyVolume,
-                OutOfTheMoneyVolume = orderbook.CurrentOutOfTheMoneyVolume,
+                Price = orderbook.LkkPriceChf,
+                InMoneyVolume = orderbook.InMoneyVolumeLkk,
+                OutOfTheMoneyVolume = orderbook.OutOfTheMoneyVolumeLkk,
                 InMoneyOrders = orderbook.InMoneyOrders
                     .Select(Map),
                 OutOfTheMoneyOrders = orderbook.OutOfMoneyOrders
@@ -43,7 +43,7 @@ namespace DutchAuction.Api.Controllers
             };
         }
 
-        private OrderbookResponse.Order Map(Order order)
+        private static OrderbookResponse.Order Map(Order order)
         {
             return new OrderbookResponse.Order
             {

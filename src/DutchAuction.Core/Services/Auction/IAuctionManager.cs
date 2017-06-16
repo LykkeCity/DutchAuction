@@ -9,9 +9,9 @@ namespace DutchAuction.Core.Services.Auction
     /// </summary>
     public interface IAuctionManager : IStartable
     {
-        Orderbook GetOrderbook();
+        IOrderbook GetOrderbook();
 
-        IBid TryGetBid(string clientId);
+        IOrderbookBid TryGetBid(string clientId);
 
         /// <summary>
         /// Starts client`s bidding

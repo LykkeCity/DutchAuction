@@ -1,36 +1,33 @@
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using DutchAuction.Core.Domain.Auction;
-using DutchAuction.Core.Services.Assets;
 using DutchAuction.Core.Services.Auction;
 
 namespace DutchAuction.Services.Auction
 {
     public class BidsService : IBidsService
     {
-        private readonly IAssetExchangeService _assetExchangeService;
-
-        private readonly Dictionary<string, Bid> _bids;
+        private readonly Dictionary<string, ClientBid> _bids;
         
-        public BidsService(IAssetExchangeService assetExchangeService)
+        public BidsService()
         {
-            _assetExchangeService = assetExchangeService;
-            _bids = new Dictionary<string, Bid>();
+            _bids = new Dictionary<string, ClientBid>();
         }
 
-        public IBid[] GetAll()
+        public IImmutableList<IClientBid> GetAll()
         {
             lock (_bids)
             {
-                return _bids.Values.Cast<IBid>().ToArray();
+                return _bids.Values.Cast<IClientBid>().ToImmutableArray();
             }
         }
 
-        public IBid TryGetBid(string clientId)
+        public IClientBid TryGetBid(string clientId)
         {
             lock (_bids)
             {
-                _bids.TryGetValue(clientId, out Bid bid);
+                _bids.TryGetValue(clientId, out ClientBid bid);
 
                 return bid;
             }
@@ -45,7 +42,7 @@ namespace DutchAuction.Services.Auction
                     return AuctionOperationResult.ClientHasAlreadyDoneBid;
                 }
 
-                var bid = new Bid(clientId, price, assetId, volume);
+                var bid = new ClientBid(clientId, price, assetId, volume);
                 
                 _bids.Add(clientId, bid);
             }
@@ -57,7 +54,7 @@ namespace DutchAuction.Services.Auction
         {
             lock (_bids)
             {
-                if (!_bids.TryGetValue(clientId, out Bid bid))
+                if (!_bids.TryGetValue(clientId, out ClientBid bid))
                 {
                     return AuctionOperationResult.BidNotFound;
                 }
@@ -67,7 +64,7 @@ namespace DutchAuction.Services.Auction
                     return AuctionOperationResult.PriceIsLessThanCurrentBidPrice;
                 }
 
-                bid.SetPrice(price);
+                _bids[clientId] = bid.SetPrice(price);
             }
 
             return AuctionOperationResult.Ok;
@@ -77,7 +74,7 @@ namespace DutchAuction.Services.Auction
         {
             lock (_bids)
             {
-                if (!_bids.TryGetValue(clientId, out Bid bid))
+                if (!_bids.TryGetValue(clientId, out ClientBid bid))
                 {
                     return AuctionOperationResult.BidNotFound;
                 }
@@ -89,34 +86,10 @@ namespace DutchAuction.Services.Auction
                     return AuctionOperationResult.VolumeIsLessThanCurrentBidAssetVolume;
                 }
 
-                bid.SetVolume(assetId, volume);
+                _bids[clientId] = bid.SetVolume(assetId, volume);
             }
 
             return AuctionOperationResult.Ok;
-        }
-
-        public void MarkBidAsPartiallyInMoney(string clientId, double currentLkkPriceChf, IEnumerable<KeyValuePair<string, double>> inMoneyBidAssetVolumes)
-        {
-            lock (_bids)
-            {
-                _bids[clientId].SetPartiallyInMoneyState(_assetExchangeService, currentLkkPriceChf, inMoneyBidAssetVolumes);
-            }
-        }
-
-        public void MarkBidAsInMoney(string clientId, double currentLkkPriceChf)
-        {
-            lock (_bids)
-            {
-                _bids[clientId].SetInMoneyState(_assetExchangeService, currentLkkPriceChf);
-            }
-        }
-
-        public void MarkBidAsOutOfTheMoney(string clientId, double currentLkkPriceChf)
-        {
-            lock (_bids)
-            {
-                _bids[clientId].SetOutOfTheMoneyState(_assetExchangeService, currentLkkPriceChf);
-            }
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using DutchAuction.Core;
 using DutchAuction.Core.Domain.Auction;
@@ -16,17 +17,114 @@ namespace DutchAuction.Services.Auction
             Continue
         }
 
-        private class BidVolume
+        private enum BidCalculationState
         {
-            public string ClientId { get; set; }
-            public double VolumeChf { get; set; }
-            public IBid Bid { get; set; }
+            NotCalculatedYet,
+            InMoney,
+            OutOfTheMoney,
+            PartiallyInMoney
+        }
+
+        private class PriceLevelBidLkkVolumeCalculation
+        {
+            public AuctionPriceLevel PriceLevel { get; }
+            public BidLkkVolumesCalculation[] BidLkkVolumeCalculations { get; }
+
+            public PriceLevelBidLkkVolumeCalculation(AuctionPriceLevel priceLevel, BidLkkVolumesCalculation[] bidLkkVolumeCalculations)
+            {
+                PriceLevel = priceLevel;
+                BidLkkVolumeCalculations = bidLkkVolumeCalculations;
+            }
+        }
+
+        private class BidLkkVolumesCalculation
+        {
+            public BidCalculation BidCalculation { get; }
+            public IImmutableList<KeyValuePair<string, double>> AssetVolumesLkk { get; }
+            public IImmutableList<KeyValuePair<string, double>> InMoneyAssetVolumesLkk { get; }
+
+            public BidLkkVolumesCalculation(IAssetExchangeService assetExchangeService, BidCalculation bidCalculation, double lkkPriceChf)
+            {
+                BidCalculation = bidCalculation;
+
+                AssetVolumesLkk = bidCalculation
+                    .AssetVolumes
+                    .Select(item => new KeyValuePair<string, double>(item.Key, assetExchangeService.Exchange(item.Value, item.Key, "CHF") / lkkPriceChf))
+                    .ToImmutableArray();
+
+                if (bidCalculation.State == BidCalculationState.OutOfTheMoney)
+                {
+                    InMoneyAssetVolumesLkk = bidCalculation
+                        .AssetVolumes
+                        .Select(item => new KeyValuePair<string, double>(item.Key, 0d))
+                        .ToImmutableArray();
+                }
+                else if (bidCalculation.State == BidCalculationState.InMoney ||
+                         bidCalculation.State == BidCalculationState.PartiallyInMoney)
+                {
+
+                    InMoneyAssetVolumesLkk = bidCalculation
+                        .InMoneyAssetVolumes
+                        .Select(item => new KeyValuePair<string, double>(item.Key,
+                            assetExchangeService.Exchange(item.Value, item.Key, "CHF") / lkkPriceChf))
+                        .ToImmutableArray();
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Invalid bid calculation state: {bidCalculation.State}");
+                }
+            }
+        }
+
+        private class BidCalculation
+        {
+            public string ClientId { get; }
+            public double LimitPriceChf { get; }
+            public double VolumeChf { get; }
+            public BidCalculationState State { get; private set; }
+            public IImmutableList<KeyValuePair<string, double>> AssetVolumes { get; }
+            public IImmutableList<KeyValuePair<string, double>> InMoneyAssetVolumes { get; private set; }
+            
+            public BidCalculation(
+                IAssetExchangeService assetExchangeService,
+                string clientId,
+                double limitPriceChf,
+                IImmutableList<KeyValuePair<string, double>> assetVolumes)
+            {
+                ClientId = clientId;
+                LimitPriceChf = limitPriceChf;
+                AssetVolumes = assetVolumes;
+
+                // Convert volume to CHF
+                VolumeChf = AssetVolumes.Sum(a => assetExchangeService.Exchange(a.Value, a.Key, "CHF"));
+
+                State = BidCalculationState.NotCalculatedYet;
+            }
+
+            public void SetInMoneyState()
+            {
+                State = BidCalculationState.InMoney;
+                InMoneyAssetVolumes = AssetVolumes;
+            }
+
+            public void SetOutOfTheMoneyState()
+            {
+                State = BidCalculationState.OutOfTheMoney;
+                InMoneyAssetVolumes = null;
+            }
+
+            public void SetPartiallyInMoneyState(IImmutableList<KeyValuePair<string, double>> inMoneyAssetVolumes)
+            {
+                State = BidCalculationState.PartiallyInMoney;
+
+                InMoneyAssetVolumes = inMoneyAssetVolumes;
+            }
         }
 
         private class AuctionPriceLevel
         {
             public double PriceChf { get; set; }
-            public BidVolume[] BidVolumes { get; set; }
+            public BidCalculation[] BidCalculations { get; set; }
         }
 
         private class RenderContext
@@ -35,32 +133,29 @@ namespace DutchAuction.Services.Auction
             public double PrevTestPriceLevelAuctionVolumeChf { get; set; }
             public double AuctionInMoneyVolumeLkk { get; set; }
             public double AuctionOutOfTheMoneyVolumeLkk { get; set; }
-            public double AuctionPriceChf { get; set; }
+            public double LkkPriceChf { get; set; }
             public bool IsAllLotsSold { get; set; }
             public bool IsAutoFitPriceCase { get; set; }
         }
 
         private readonly IAssetExchangeService _assetExchangeService;
-        private readonly IBidsService _bidsService;
         private readonly double _totalAuctionVolumeLkk;
         private readonly double _minClosingBidCutoffVolumeLkk;
 
         public OrderbookService(
             IAssetExchangeService assetExchangeService,
-            IBidsService bidsService,
             double totalAuctionVolumeLkk,
             double minClosingBidCutoffVolumeLkk)
         {
             _assetExchangeService = assetExchangeService;
-            _bidsService = bidsService;
             _totalAuctionVolumeLkk = totalAuctionVolumeLkk;
             _minClosingBidCutoffVolumeLkk = minClosingBidCutoffVolumeLkk;
         }
 
-        public Orderbook Render()
+        public IOrderbook Render(IImmutableList<IClientBid> clientBids)
         {
-            var priceLevels = GetPriceLevels();
             var context = new RenderContext();
+            var priceLevels = GetPriceLevels(clientBids);
 
             // Iterate through price levels (from high to low price) that we try to sale all given LKK
             // with as small price as possible. Name it "Test price level"
@@ -74,83 +169,126 @@ namespace DutchAuction.Services.Auction
                 TrySaleWithPriceLevel(context, testPriceLevel, priceLevels);
             }
 
-            return new Orderbook
-            {
-                CurrentPrice = context.AuctionPriceChf,
-                CurrentInMoneyVolume = context.AuctionInMoneyVolumeLkk,
-                CurrentOutOfTheMoneyVolume = context.AuctionOutOfTheMoneyVolumeLkk,
-                InMoneyOrders = priceLevels
-                    .Where(p => p.PriceChf.IsApparentlyGreateOrEquals(context.AuctionPriceChf))
-                    .Select(p => new Order
-                    {
-                        Investors = p.BidVolumes.Count(b => b.Bid.State == BidState.InMoney || b.Bid.State == BidState.PartiallyInMoney),
-                        Price = p.PriceChf,
-                        Volume = CalculateInMoneyOrderVolume(p, context)
+            var bidLkkVolumePriceLevels = CalculatePriceLevelBidLkkVolumes(priceLevels, context.LkkPriceChf);
 
-                    })
-                    .ToArray(),
-                OutOfMoneyOrders = priceLevels
-                    .Where(p => p.PriceChf.IsApparentlyLessOrEquals(context.AuctionPriceChf))
-                    .Select(p => new Order
-                    {
-                        Investors = p.BidVolumes.Count(b => b.Bid.State == BidState.OutOfTheMoney || b.Bid.State == BidState.PartiallyInMoney),
-                        Price = p.PriceChf,
-                        Volume = CalculateOutOfTheMoneyOrderVolume(p, context)
-                    })
-                    .ToArray()
+            return new Orderbook(
+                lkkPriceChf: context.LkkPriceChf,
+                inMoneyVolumeLkk: context.AuctionInMoneyVolumeLkk,
+                outOfTheMoneyVolumeLkk: context.AuctionOutOfTheMoneyVolumeLkk,
+                inMoneyOrders: bidLkkVolumePriceLevels
+                    // TODO: Тут сравнивать уровни, а не значения цен, но не забыть про вычисляемый уровень
+                    .Where(p => p.PriceLevel.PriceChf.IsApparentlyGreateOrEquals(context.LkkPriceChf))
+                    .Select(p => CreateInMoneyOrder(p.BidLkkVolumeCalculations, p.PriceLevel.PriceChf,
+                        context.LkkPriceChf))
+                    .ToImmutableArray(),
+                outOfMoneyOrders: bidLkkVolumePriceLevels
+                    // TODO: Тут сравнивать уровни, а не значения цен, но не забыть про вычисляемый уровень
+                    .Where(p => p.PriceLevel.PriceChf.IsApparentlyLessOrEquals(context.LkkPriceChf))
+                    .Select(p => CreateOutOfTheMoneyOrder(p.BidLkkVolumeCalculations, p.PriceLevel.PriceChf,
+                        context.LkkPriceChf))
+                    .ToImmutableArray(),
+                bids: bidLkkVolumePriceLevels
+                    .SelectMany(p => p.BidLkkVolumeCalculations)
+                    .ToImmutableDictionary(
+                        b => b.BidCalculation.ClientId,
+                        b => new OrderbookBid(
+                            b.BidCalculation.ClientId,
+                            b.BidCalculation.LimitPriceChf,
+                            context.LkkPriceChf,
+                            GetOrderbookBidState(b.BidCalculation.State),
+                            b.BidCalculation.AssetVolumes,
+                            b.AssetVolumesLkk,
+                            b.InMoneyAssetVolumesLkk))
+            );
+        }
+
+        private static OrderbookBidState GetOrderbookBidState(BidCalculationState sourceState)
+        {
+            switch (sourceState)
+            {
+                case BidCalculationState.InMoney:
+                    return OrderbookBidState.InMoney;
+
+                case BidCalculationState.OutOfTheMoney:
+                    return OrderbookBidState.OutOfTheMoney;
+
+                case BidCalculationState.PartiallyInMoney:
+                    return OrderbookBidState.PartiallyInMoney;
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(sourceState), sourceState, "Invalid BidCalculationState");
+            }
+        }
+
+        private PriceLevelBidLkkVolumeCalculation[] CalculatePriceLevelBidLkkVolumes(AuctionPriceLevel[] priceLevels, double lkkPriceChf)
+        {
+            return priceLevels
+                .Select(p => new PriceLevelBidLkkVolumeCalculation(p, p.BidCalculations
+                    .Select(b => new BidLkkVolumesCalculation(_assetExchangeService, b, lkkPriceChf))
+                    .ToArray()))
+                .ToArray();
+        }
+
+        private static Order CreateInMoneyOrder(IEnumerable<BidLkkVolumesCalculation> bidLkkVolumesCalculations, double priceLevelChf, double lkkPriceChf)
+        {
+            var investors = 0;
+            var volumeChf = 0d;
+            var volumeLkk = 0d;
+
+            foreach (var volumeCalculation in bidLkkVolumesCalculations)
+            {
+                if (volumeCalculation.BidCalculation.State == BidCalculationState.InMoney)
+                {
+                    volumeChf += volumeCalculation.BidCalculation.VolumeChf;
+                    investors++;
+                }
+                else if (volumeCalculation.BidCalculation.State == BidCalculationState.PartiallyInMoney)
+                {
+                    volumeLkk += volumeCalculation.InMoneyAssetVolumesLkk.Sum(a => a.Value);
+                    investors++;
+                }
+            }
+ 
+            return new Order
+            {
+                Investors = investors,
+                Price = priceLevelChf,
+                Volume = volumeChf / lkkPriceChf + volumeLkk
             };
         }
 
-        private double CalculateInMoneyOrderVolume(AuctionPriceLevel p, RenderContext context)
+        private static Order CreateOutOfTheMoneyOrder(IEnumerable<BidLkkVolumesCalculation> bidLkkVolumesCalculations, double priceLevelChf, double lkkPriceChf)
         {
+            var investors = 0;
             var volumeChf = 0d;
             var volumeLkk = 0d;
 
-            foreach (var bidVolume in p.BidVolumes)
+            foreach (var volumeCalculation in bidLkkVolumesCalculations)
             {
-                switch (bidVolume.Bid.State)
+                if (volumeCalculation.BidCalculation.State == BidCalculationState.OutOfTheMoney)
                 {
-                    case BidState.InMoney:
-                        volumeChf += bidVolume.VolumeChf;
-                        break;
-
-                    case BidState.PartiallyInMoney:
-                        volumeLkk += bidVolume.Bid.InMoneyAssetVolumesLkk.Sum(a => a.Value);
-                        break;
+                    volumeChf += volumeCalculation.BidCalculation.VolumeChf;
+                    investors++;
                 }
-            }
-            
-            // Convert volume to LKK
-            return volumeChf / context.AuctionPriceChf + volumeLkk;
-        }
-
-        private double CalculateOutOfTheMoneyOrderVolume(AuctionPriceLevel p, RenderContext context)
-        {
-            var volumeChf = 0d;
-            var volumeLkk = 0d;
-
-            foreach (var bidVolume in p.BidVolumes)
-            {
-                switch (bidVolume.Bid.State)
+                else if (volumeCalculation.BidCalculation.State == BidCalculationState.PartiallyInMoney)
                 {
-                    case BidState.OutOfTheMoney:
-                        volumeChf += bidVolume.VolumeChf;
-                        break;
-
-                    case BidState.PartiallyInMoney:
-                        volumeLkk += bidVolume.VolumeChf / context.AuctionPriceChf -
-                                     bidVolume.Bid.InMoneyAssetVolumesLkk.Sum(a => a.Value);
-                        break;
+                    volumeLkk += volumeCalculation.BidCalculation.VolumeChf / lkkPriceChf -
+                                 volumeCalculation.InMoneyAssetVolumesLkk.Sum(a => a.Value);
+                    investors++;
                 }
             }
 
-            // Convert volume to LKK
-            return volumeChf / context.AuctionPriceChf + volumeLkk;
+            return new Order
+            {
+                Investors = investors,
+                Price = priceLevelChf,
+                Volume = volumeChf / lkkPriceChf + volumeLkk
+            };
         }
 
         private void TrySaleWithPriceLevel(RenderContext context, int testPriceLevel, AuctionPriceLevel[] priceLevels)
         {
-            context.AuctionPriceChf = priceLevels[testPriceLevel].PriceChf;
+            context.LkkPriceChf = priceLevels[testPriceLevel].PriceChf;
             context.AuctionInMoneyVolumeLkk = 0d;
             context.AuctionOutOfTheMoneyVolumeLkk = 0d;
             context.PrevTestPriceLevelAuctionVolumeChf = context.AuctionVolumeChf;
@@ -192,14 +330,14 @@ namespace DutchAuction.Services.Auction
             if (!context.IsAllLotsSold)
             {
                 // Small bids first
-                var currentPriceBids = aggregationPriceLevel
-                    .BidVolumes
+                var currentPriceBidCalculations = aggregationPriceLevel
+                    .BidCalculations
                     .OrderBy(b => b.VolumeChf)
                     .ToArray();
 
-                foreach (var bidVolume in currentPriceBids)
+                foreach (var bidCalculation in currentPriceBidCalculations)
                 {
-                    var result = ProcessBid(context, bidVolume, aggregationPriceLevel);
+                    var result = ProcessBid(context, bidCalculation, aggregationPriceLevel);
 
                     switch (result)
                     {
@@ -216,55 +354,55 @@ namespace DutchAuction.Services.Auction
             }
             else
             {
-                foreach (var bid in aggregationPriceLevel.BidVolumes)
+                foreach (var bid in aggregationPriceLevel.BidCalculations)
                 {
-                    context.AuctionOutOfTheMoneyVolumeLkk += bid.VolumeChf / context.AuctionPriceChf;
-                    _bidsService.MarkBidAsOutOfTheMoney(bid.ClientId, context.AuctionPriceChf);
+                    context.AuctionOutOfTheMoneyVolumeLkk += bid.VolumeChf / context.LkkPriceChf;
+                    bid.SetOutOfTheMoneyState();
                 }
             }
 
             return CalculationContinuation.Continue;
         }
 
-        private CalculationContinuation ProcessBid(RenderContext context, BidVolume bidVolume, AuctionPriceLevel aggregationPriceLevel)
+        private CalculationContinuation ProcessBid(RenderContext context, BidCalculation bidCalculation, AuctionPriceLevel aggregationPriceLevel)
         {
             if (context.IsAllLotsSold)
             {
-                context.AuctionOutOfTheMoneyVolumeLkk += bidVolume.VolumeChf / context.AuctionPriceChf;
-                _bidsService.MarkBidAsOutOfTheMoney(bidVolume.ClientId, context.AuctionPriceChf);
+                context.AuctionOutOfTheMoneyVolumeLkk += bidCalculation.VolumeChf / context.LkkPriceChf;
+                bidCalculation.SetOutOfTheMoneyState();
 
                 return CalculationContinuation.Continue;
             }
 
-            context.AuctionVolumeChf += bidVolume.VolumeChf;
+            context.AuctionVolumeChf += bidCalculation.VolumeChf;
 
-            var nextAuctionVolumeLkk = context.AuctionVolumeChf / context.AuctionPriceChf;
+            var nextAuctionVolumeLkk = context.AuctionVolumeChf / context.LkkPriceChf;
 
             if (nextAuctionVolumeLkk >= _totalAuctionVolumeLkk)
             {
-                if (!context.IsAutoFitPriceCase && aggregationPriceLevel.PriceChf > context.AuctionPriceChf)
+                if (!context.IsAutoFitPriceCase && aggregationPriceLevel.PriceChf > context.LkkPriceChf)
                 {
                     // All LKK sold, but we don`t reach bids in test price level yet,
                     // Calculate price which allow to sale exactly all LKK to bids up to
                     // current aggregation price level
                     context.IsAutoFitPriceCase = true;
-                    context.AuctionPriceChf = context.PrevTestPriceLevelAuctionVolumeChf / _totalAuctionVolumeLkk;
+                    context.LkkPriceChf = context.PrevTestPriceLevelAuctionVolumeChf / _totalAuctionVolumeLkk;
                     // And continue calculating from the current aggregation price level (recalculate it again)
                     return CalculationContinuation.RestartCurrentTestPriceLevel;
                 }
 
-                ProcessClosingBid(context, bidVolume, nextAuctionVolumeLkk);
+                ProcessClosingBid(context, bidCalculation, nextAuctionVolumeLkk);
 
                 return CalculationContinuation.Continue;
             }
 
             context.AuctionInMoneyVolumeLkk = nextAuctionVolumeLkk;
-            _bidsService.MarkBidAsInMoney(bidVolume.ClientId, context.AuctionPriceChf);
+            bidCalculation.SetInMoneyState();
 
             return CalculationContinuation.Continue;
         }
 
-        private void ProcessClosingBid(RenderContext context, BidVolume bidVolume, double nextAuctionVolumeLkk)
+        private void ProcessClosingBid(RenderContext context, BidCalculation bidCalculation, double nextAuctionVolumeLkk)
         {
             var inMoneyBidVolumeLkk = _totalAuctionVolumeLkk - context.AuctionInMoneyVolumeLkk;
             var outOfTheMoneyBidVolumeLkk = nextAuctionVolumeLkk - _totalAuctionVolumeLkk;
@@ -279,49 +417,41 @@ namespace DutchAuction.Services.Auction
                     context.AuctionOutOfTheMoneyVolumeLkk += outOfTheMoneyBidVolumeLkk;
 
                     // Take every asset proportionaly to rest of the bid
-                    var inMoneyBidRate = inMoneyBidVolumeLkk * context.AuctionPriceChf / bidVolume.VolumeChf;
-                    var inMoneyBidAssetVolumes = bidVolume.Bid.AssetVolumes.Select(i => new KeyValuePair<string, double>(i.Key, i.Value * inMoneyBidRate));
+                    var inMoneyBidRate = inMoneyBidVolumeLkk * context.LkkPriceChf / bidCalculation.VolumeChf;
+                    var inMoneyBidAssetVolumes = bidCalculation.AssetVolumes
+                        .Select(i => new KeyValuePair<string, double>(i.Key, i.Value * inMoneyBidRate))
+                        .ToImmutableArray();
 
-                    _bidsService.MarkBidAsPartiallyInMoney(bidVolume.ClientId, context.AuctionPriceChf, inMoneyBidAssetVolumes);
+                    bidCalculation.SetPartiallyInMoneyState(inMoneyBidAssetVolumes);
                 }
                 else
                 {
-                    _bidsService.MarkBidAsInMoney(bidVolume.ClientId, context.AuctionPriceChf);
+                    bidCalculation.SetInMoneyState();
                 }
             }
             else
             {
-                context.AuctionOutOfTheMoneyVolumeLkk += bidVolume.VolumeChf / context.AuctionPriceChf;
-                _bidsService.MarkBidAsOutOfTheMoney(bidVolume.ClientId, context.AuctionPriceChf);
+                context.AuctionOutOfTheMoneyVolumeLkk += bidCalculation.VolumeChf / context.LkkPriceChf;
+                bidCalculation.SetOutOfTheMoneyState();
             }
 
             context.IsAllLotsSold = true;
         }
 
-        private AuctionPriceLevel[] GetPriceLevels()
+        private AuctionPriceLevel[] GetPriceLevels(IImmutableList<IClientBid> clientBids)
         {
-            return _bidsService
-                .GetAll()
-                .Select(i => new
-                {
-                    ClientId = i.ClientId,
-                    Price = i.LimitPriceChf,
-                    // Convert volume to CHF
-                    Volume = i.AssetVolumes.Sum(a => _assetExchangeService.Exchange(a.Value, a.Key, "CHF")),
-                    Bid = i
-                })
-                .GroupBy(i => i.Price)
+            return clientBids
+                .GroupBy(i => i.LimitPriceChf)
                 .OrderByDescending(g => g.Key)
                 .Select(g => new AuctionPriceLevel
                 {
                     PriceChf = g.Key,
-                    BidVolumes = g
-                        .Select(i => new BidVolume
-                        {
-                            ClientId = i.ClientId,
-                            VolumeChf = i.Volume,
-                            Bid = i.Bid
-                        })
+                    BidCalculations = g
+                        .Select(i => new BidCalculation(
+                            _assetExchangeService,
+                            i.ClientId,
+                            i.LimitPriceChf,
+                            i.AssetVolumes))
                         .ToArray()
                 })
                 .ToArray();

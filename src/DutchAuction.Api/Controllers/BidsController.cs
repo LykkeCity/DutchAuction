@@ -1,8 +1,11 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using DutchAuction.Api.Models;
 using DutchAuction.Core;
+using DutchAuction.Core.Domain.Auction;
 using DutchAuction.Core.Services.Auction;
 using Microsoft.AspNetCore.Mvc;
+using BidState = DutchAuction.Api.Models.BidState;
 
 namespace DutchAuction.Api.Controllers
 {
@@ -38,16 +41,16 @@ namespace DutchAuction.Api.Controllers
             var bid = _auctionManager.TryGetBid(clientId);
             if (bid == null)
             {
-                return NotFound(ErrorResponse.Create("Client not found"));
+                return NotFound(ErrorResponse.Create("Bid not found"));
             }
 
             return Ok(new BidResponse
             {
                 ClientId = bid.ClientId,
                 LimitPriceChf = bid.LimitPriceChf,
-                CurrentLkkPriceChf = bid.LkkPriceChf,
+                LkkPriceChf = bid.LkkPriceChf,
                 AssetVolumes = bid.AssetVolumes,
-                State = bid.State,
+                State = Map(bid.State),
                 AssetVolumesLkk = bid.AssetVolumesLkk,
                 InMoneyAssetVolumesLkk = bid.InMoneyAssetVolumesLkk
             });
@@ -117,6 +120,24 @@ namespace DutchAuction.Api.Controllers
             var result = _auctionManager.AcceptVolumeBid(model.ClientId, model.AssetId, model.Volume, model.Date);
 
             return Ok(AuctionOperationResponse.Create(result));
+        }
+
+        private BidState Map(OrderbookBidState bidState)
+        {
+            switch (bidState)
+            {
+                case OrderbookBidState.InMoney:
+                    return BidState.InMoney;
+
+                case OrderbookBidState.OutOfTheMoney:
+                    return BidState.OutOfTheMoney;
+
+                case OrderbookBidState.PartiallyInMoney:
+                    return BidState.PartiallyInMoney;
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(bidState), bidState, null);
+            }
         }
     }
 }

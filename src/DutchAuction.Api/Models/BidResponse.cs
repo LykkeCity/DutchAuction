@@ -19,19 +19,19 @@ namespace DutchAuction.Api.Models
         /// LKK price in CHF, that bid volumes in LKK was calculated with
         /// </summary>
         [Required]
-        public double CurrentLkkPriceChf { get; set; }
+        public double LkkPriceChf { get; set; }
 
         [Required]
-        public IReadOnlyCollection<KeyValuePair<string, double>> AssetVolumes { get; set; }
+        public IEnumerable<KeyValuePair<string, double>> AssetVolumes { get; set; }
 
         [Required]
         [EnumDataType(typeof(BidState))]
         public BidState State { get; set; }
 
         [Required]
-        public IReadOnlyCollection<KeyValuePair<string, double>> AssetVolumesLkk { get; set; }
+        public IEnumerable<KeyValuePair<string, double>> AssetVolumesLkk { get; set; }
 
         [Required]
-        public IReadOnlyCollection<KeyValuePair<string, double>> InMoneyAssetVolumesLkk { get; set; }
+        public IEnumerable<KeyValuePair<string, double>> InMoneyAssetVolumesLkk { get; set; }
     }
 }

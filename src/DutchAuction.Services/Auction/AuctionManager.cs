@@ -19,7 +19,7 @@ namespace DutchAuction.Services.Auction
         private readonly ILog _log;
         private readonly TimeSpan _orderbookUpdatePeriod;
         private Timer _orderbookUpdateTimer;
-        private Orderbook _latestOrderbook;
+        private IOrderbook _latestOrderbook;
 
         public AuctionManager(
             IAuctionEventsManager auctionEventsManager, 
@@ -65,14 +65,14 @@ namespace DutchAuction.Services.Auction
             }
         }
 
-        public Orderbook GetOrderbook()
+        public IOrderbook GetOrderbook()
         {
             return _latestOrderbook;
         }
 
-        public IBid TryGetBid(string clientId)
+        public IOrderbookBid TryGetBid(string clientId)
         {
-            return _bidsService.TryGetBid(clientId);
+            return _latestOrderbook?.TryGetBid(clientId);
         }
 
         public AuctionOperationResult StartBidding(string clientId, string assetId, double price, double volume, DateTime date)
@@ -163,14 +163,14 @@ namespace DutchAuction.Services.Auction
 
         private async Task UpdateOrderbookAsync()
         {
-            var orderbook = _orderbookService.Render();
+            var orderbook = _orderbookService.Render(_bidsService.GetAll());
 
             _latestOrderbook = orderbook;
 
             await _priceHistoryService.PublishAsync(
-                orderbook.CurrentPrice,
-                orderbook.CurrentInMoneyVolume,
-                orderbook.CurrentOutOfTheMoneyVolume);
+                orderbook.LkkPriceChf,
+                orderbook.InMoneyVolumeLkk,
+                orderbook.OutOfTheMoneyVolumeLkk);
         }
     }
 }

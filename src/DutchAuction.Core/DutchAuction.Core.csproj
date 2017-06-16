@@ -9,4 +9,8 @@
     <PackageReference Include="Lykke.MarketProfileService.Client" Version="1.0.19" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Domain\Auction\OrderbookRendering\" />
+  </ItemGroup>
+
 </Project>

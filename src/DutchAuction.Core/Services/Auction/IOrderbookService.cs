@@ -1,9 +1,10 @@
-﻿using DutchAuction.Core.Domain.Auction;
+﻿using System.Collections.Immutable;
+using DutchAuction.Core.Domain.Auction;
 
 namespace DutchAuction.Core.Services.Auction
 {
     public interface IOrderbookService
     {
-        Orderbook Render();
+        IOrderbook Render(IImmutableList<IClientBid> clientBids);
     }
 }
