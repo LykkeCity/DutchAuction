@@ -9,8 +9,17 @@ namespace DutchAuction.Api.Models
         [Required]
         public string ClientId { get; set; }
 
+        /// <summary>
+        /// Client`s limit price in CHF
+        /// </summary>
         [Required]
-        public double Price { get; set; }
+        public double LimitPriceChf { get; set; }
+
+        /// <summary>
+        /// LKK price in CHF, that bid volumes in LKK was calculated with
+        /// </summary>
+        [Required]
+        public double CurrentLkkPriceChf { get; set; }
 
         [Required]
         public IReadOnlyCollection<KeyValuePair<string, double>> AssetVolumes { get; set; }
@@ -20,6 +29,9 @@ namespace DutchAuction.Api.Models
         public BidState State { get; set; }
 
         [Required]
-        public IReadOnlyCollection<KeyValuePair<string, double>> InMoneyAssetVolumes { get; set; }
+        public IReadOnlyCollection<KeyValuePair<string, double>> AssetVolumesLkk { get; set; }
+
+        [Required]
+        public IReadOnlyCollection<KeyValuePair<string, double>> InMoneyAssetVolumesLkk { get; set; }
     }
 }

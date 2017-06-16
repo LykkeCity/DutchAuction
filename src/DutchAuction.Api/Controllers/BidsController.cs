@@ -44,10 +44,12 @@ namespace DutchAuction.Api.Controllers
             return Ok(new BidResponse
             {
                 ClientId = bid.ClientId,
-                Price = bid.Price,
+                LimitPriceChf = bid.LimitPriceChf,
+                CurrentLkkPriceChf = bid.LkkPriceChf,
                 AssetVolumes = bid.AssetVolumes,
                 State = bid.State,
-                InMoneyAssetVolumes = bid.InMoneyAssetVolumes
+                AssetVolumesLkk = bid.AssetVolumesLkk,
+                InMoneyAssetVolumesLkk = bid.InMoneyAssetVolumesLkk
             });
         }
 

@@ -31,15 +31,15 @@ namespace DutchAuction.UnitTests
                 .Setup(s => s.GetAll())
                 .Returns(() => _bids.Cast<IBid>().ToArray());
             _bidsServiceMock
-                .Setup(s => s.MarkBidAsInMoney(It.IsAny<string>()))
-                .Callback<string>(clientId => _bids.Single(b => b.ClientId == clientId).SetInMoneyState());
+                .Setup(s => s.MarkBidAsInMoney(It.IsAny<string>(), It.IsAny<double>()))
+                .Callback<string, double>((clientId, lkkPrice) => _bids.Single(b => b.ClientId == clientId).SetInMoneyState(lkkPrice));
             _bidsServiceMock
-                .Setup(s => s.MarkBidAsOutOfTheMoney(It.IsAny<string>()))
-                .Callback<string>(clientId => _bids.Single(b => b.ClientId == clientId).SetOutOfTheMoneyState());
+                .Setup(s => s.MarkBidAsOutOfTheMoney(It.IsAny<string>(), It.IsAny<double>()))
+                .Callback<string, double>((clientId, lkkPrice) => _bids.Single(b => b.ClientId == clientId).SetOutOfTheMoneyState(lkkPrice));
             _bidsServiceMock
-                .Setup(s => s.MarkBidAsPartiallyInMoney(It.IsAny<string>(), It.IsAny<IEnumerable<KeyValuePair<string, double>>>()))
-                .Callback<string, IEnumerable<KeyValuePair<string, double>>>((clientId, outOfTheMoneyAssetValues) => 
-                    _bids.Single(b => b.ClientId == clientId).SetPartiallyInMoneyState(outOfTheMoneyAssetValues));
+                .Setup(s => s.MarkBidAsPartiallyInMoney(It.IsAny<string>(), It.IsAny<double>(), It.IsAny<IEnumerable<KeyValuePair<string, double>>>()))
+                .Callback<string, double, IEnumerable<KeyValuePair<string, double>>>((clientId, lkkPrice, outOfTheMoneyAssetValues) => 
+                    _bids.Single(b => b.ClientId == clientId).SetPartiallyInMoneyState(lkkPrice, outOfTheMoneyAssetValues));
 
             _orderbookService = new OrderbookService(_assetExchangeServiceMock.Object, _bidsServiceMock.Object, 
                 totalAuctionVolumeLkk: 5000, 
@@ -222,11 +222,11 @@ namespace DutchAuction.UnitTests
             Assert.AreEqual(BidState.InMoney, _bids[3].State);
             Assert.AreEqual(BidState.InMoney, _bids[4].State);
             Assert.AreEqual(BidState.PartiallyInMoney, _bids[5].State);
-            Assert.AreEqual(2, _bids[5].InMoneyAssetVolumes.Count);
-            Assert.AreEqual(1, _bids[5].InMoneyAssetVolumes.Count(v => v.Key == "EUR"));
-            Assert.AreEqual(1, _bids[5].InMoneyAssetVolumes.Count(v => v.Key == "USD"));
-            Assert.AreEqual(400d / 880d * 800d, _bids[5].InMoneyAssetVolumes.Single(v => v.Key == "EUR").Value, Delta);
-            Assert.AreEqual(400d / 880d * 80d, _bids[5].InMoneyAssetVolumes.Single(v => v.Key == "USD").Value, Delta);
+            Assert.AreEqual(2, _bids[5].InMoneyAssetVolumesLkk.Count);
+            Assert.AreEqual(1, _bids[5].InMoneyAssetVolumesLkk.Count(v => v.Key == "EUR"));
+            Assert.AreEqual(1, _bids[5].InMoneyAssetVolumesLkk.Count(v => v.Key == "USD"));
+            Assert.AreEqual(400d / 880d * 800d, _bids[5].InMoneyAssetVolumesLkk.Single(v => v.Key == "EUR").Value, Delta);
+            Assert.AreEqual(400d / 880d * 80d, _bids[5].InMoneyAssetVolumesLkk.Single(v => v.Key == "USD").Value, Delta);
             Assert.AreEqual(BidState.OutOfTheMoney, _bids[6].State);
             Assert.AreEqual(BidState.OutOfTheMoney, _bids[7].State);
         }
