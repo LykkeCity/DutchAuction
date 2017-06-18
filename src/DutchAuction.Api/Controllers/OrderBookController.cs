@@ -38,7 +38,7 @@ namespace DutchAuction.Api.Controllers
                 OutOfTheMoneyVolume = orderbook.OutOfTheMoneyVolumeLkk,
                 InMoneyOrders = orderbook.InMoneyOrders
                     .Select(Map),
-                OutOfTheMoneyOrders = orderbook.OutOfMoneyOrders
+                OutOfTheMoneyOrders = orderbook.OutOfTheMoneyOrders
                     .Select(Map)
             };
         }

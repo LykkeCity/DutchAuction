@@ -91,7 +91,6 @@ namespace DutchAuction.Api
 
             var builder = new ContainerBuilder();
             
-
             builder.RegisterModule(new ApiModule(appSettings, log));
             builder.Populate(services);
 

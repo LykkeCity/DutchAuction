@@ -5,7 +5,6 @@ using DutchAuction.Core;
 using DutchAuction.Core.Domain.Auction;
 using DutchAuction.Core.Services.Auction;
 using Microsoft.AspNetCore.Mvc;
-using BidState = DutchAuction.Api.Models.BidState;
 
 namespace DutchAuction.Api.Controllers
 {
@@ -26,6 +25,42 @@ namespace DutchAuction.Api.Controllers
             _settings = settings;
             _auctionManager = auctionManager;
         }
+
+#if DEBUG
+        [HttpPost("/testData/{bidsCount:int}")]
+        public IActionResult GenerateTestBids(int bidsCount)
+        {
+            if (_auctionManager.GetOrderbook().BidsCount != 0)
+            {
+                return BadRequest("Clean auction events and restart service first");
+            }
+
+            var assets = new[] { "USD", "EUR", "CHF", "BTC" };
+            var volumes = new[] { 10, 40, 50, 150 };
+            var assetsCount = new[] { 1, 2, 3, 4 };
+
+            for (var i = 0; i < bidsCount; ++i)
+            {
+                _auctionManager.StartBidding(
+                    $"client_{i + 1}",
+                    assets[i % assets.Length],
+                    Math.Round(0.5 + i / (double)bidsCount, 3),
+                    volumes[i % volumes.Length],
+                    DateTime.UtcNow);
+
+                for (var k = 0; k < assetsCount[i % assetsCount.Length]; ++k)
+                {
+                    _auctionManager.AcceptVolumeBid(
+                        $"client_{i + 1}",
+                        assets[(i + k) % assets.Length],
+                        volumes[(i + k) % volumes.Length],
+                        DateTime.UtcNow);
+                }
+            }
+
+            return Ok();
+        }
+#endif
 
         [HttpGet("{clientId}")]
         [ProducesResponseType(typeof(BidResponse), (int)HttpStatusCode.OK)]
@@ -122,18 +157,18 @@ namespace DutchAuction.Api.Controllers
             return Ok(AuctionOperationResponse.Create(result));
         }
 
-        private BidState Map(OrderbookBidState bidState)
+        private Models.BidState Map(OrderbookBidState bidState)
         {
             switch (bidState)
             {
                 case OrderbookBidState.InMoney:
-                    return BidState.InMoney;
+                    return Models.BidState.InMoney;
 
                 case OrderbookBidState.OutOfTheMoney:
-                    return BidState.OutOfTheMoney;
+                    return Models.BidState.OutOfTheMoney;
 
                 case OrderbookBidState.PartiallyInMoney:
-                    return BidState.PartiallyInMoney;
+                    return Models.BidState.PartiallyInMoney;
 
                 default:
                     throw new ArgumentOutOfRangeException(nameof(bidState), bidState, null);

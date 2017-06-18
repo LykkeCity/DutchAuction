@@ -1,4 +1,7 @@
-﻿using System.Collections.Immutable;
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using DutchAuction.Core.Domain.Auction;
 using DutchAuction.Core.Services.Assets;
@@ -256,15 +259,15 @@ namespace DutchAuction.UnitTests
             Assert.AreEqual(2, orderbook.InMoneyOrders[3].Investors);
             Assert.AreEqual(1150 / 0.5, orderbook.InMoneyOrders[3].Volume, Delta);
 
-            Assert.AreEqual(2, orderbook.OutOfMoneyOrders.Count);
+            Assert.AreEqual(2, orderbook.OutOfTheMoneyOrders.Count);
 
-            Assert.AreEqual(0.5, orderbook.OutOfMoneyOrders[0].Price, Delta);
-            Assert.AreEqual(2, orderbook.OutOfMoneyOrders[0].Investors);
-            Assert.AreEqual(1480 / 0.5, orderbook.OutOfMoneyOrders[0].Volume, Delta);
+            Assert.AreEqual(0.5, orderbook.OutOfTheMoneyOrders[0].Price, Delta);
+            Assert.AreEqual(2, orderbook.OutOfTheMoneyOrders[0].Investors);
+            Assert.AreEqual(1480 / 0.5, orderbook.OutOfTheMoneyOrders[0].Volume, Delta);
 
-            Assert.AreEqual(0.4, orderbook.OutOfMoneyOrders[1].Price, Delta);
-            Assert.AreEqual(1, orderbook.OutOfMoneyOrders[1].Investors);
-            Assert.AreEqual(100 / 0.5, orderbook.OutOfMoneyOrders[1].Volume, Delta);
+            Assert.AreEqual(0.4, orderbook.OutOfTheMoneyOrders[1].Price, Delta);
+            Assert.AreEqual(1, orderbook.OutOfTheMoneyOrders[1].Investors);
+            Assert.AreEqual(100 / 0.5, orderbook.OutOfTheMoneyOrders[1].Volume, Delta);
 
             Assert.AreEqual(OrderbookBidState.InMoney, orderbook.TryGetBid("client1").State);
             Assert.AreEqual(OrderbookBidState.InMoney, orderbook.TryGetBid("client2").State);
@@ -372,15 +375,15 @@ namespace DutchAuction.UnitTests
             Assert.AreEqual(1, orderbook.InMoneyOrders[3].Investors);
             Assert.AreEqual(1145 / 0.5, orderbook.InMoneyOrders[3].Volume, Delta);
 
-            Assert.AreEqual(2, orderbook.OutOfMoneyOrders.Count);
+            Assert.AreEqual(2, orderbook.OutOfTheMoneyOrders.Count);
 
-            Assert.AreEqual(0.5, orderbook.OutOfMoneyOrders[0].Price, Delta);
-            Assert.AreEqual(2, orderbook.OutOfMoneyOrders[0].Investors);
-            Assert.AreEqual(3500 / 0.5, orderbook.OutOfMoneyOrders[0].Volume, Delta);
+            Assert.AreEqual(0.5, orderbook.OutOfTheMoneyOrders[0].Price, Delta);
+            Assert.AreEqual(2, orderbook.OutOfTheMoneyOrders[0].Investors);
+            Assert.AreEqual(3500 / 0.5, orderbook.OutOfTheMoneyOrders[0].Volume, Delta);
 
-            Assert.AreEqual(0.4, orderbook.OutOfMoneyOrders[1].Price, Delta);
-            Assert.AreEqual(1, orderbook.OutOfMoneyOrders[1].Investors);
-            Assert.AreEqual(100 / 0.5, orderbook.OutOfMoneyOrders[1].Volume, Delta);
+            Assert.AreEqual(0.4, orderbook.OutOfTheMoneyOrders[1].Price, Delta);
+            Assert.AreEqual(1, orderbook.OutOfTheMoneyOrders[1].Investors);
+            Assert.AreEqual(100 / 0.5, orderbook.OutOfTheMoneyOrders[1].Volume, Delta);
 
             Assert.AreEqual(OrderbookBidState.InMoney, orderbook.TryGetBid("client1").State);
             Assert.AreEqual(OrderbookBidState.InMoney, orderbook.TryGetBid("client2").State);
@@ -488,15 +491,15 @@ namespace DutchAuction.UnitTests
             Assert.AreEqual(2, orderbook.InMoneyOrders[3].Investors);
             Assert.AreEqual(10 / 0.5, orderbook.InMoneyOrders[3].Volume, Delta);
 
-            Assert.AreEqual(2, orderbook.OutOfMoneyOrders.Count);
+            Assert.AreEqual(2, orderbook.OutOfTheMoneyOrders.Count);
 
-            Assert.AreEqual(0.5, orderbook.OutOfMoneyOrders[0].Price, Delta);
-            Assert.AreEqual(1, orderbook.OutOfMoneyOrders[0].Investors);
-            Assert.AreEqual(2000 / 0.5, orderbook.OutOfMoneyOrders[0].Volume, Delta);
+            Assert.AreEqual(0.5, orderbook.OutOfTheMoneyOrders[0].Price, Delta);
+            Assert.AreEqual(1, orderbook.OutOfTheMoneyOrders[0].Investors);
+            Assert.AreEqual(2000 / 0.5, orderbook.OutOfTheMoneyOrders[0].Volume, Delta);
 
-            Assert.AreEqual(0.4, orderbook.OutOfMoneyOrders[1].Price, Delta);
-            Assert.AreEqual(1, orderbook.OutOfMoneyOrders[1].Investors);
-            Assert.AreEqual(100 / 0.5, orderbook.OutOfMoneyOrders[1].Volume, Delta);
+            Assert.AreEqual(0.4, orderbook.OutOfTheMoneyOrders[1].Price, Delta);
+            Assert.AreEqual(1, orderbook.OutOfTheMoneyOrders[1].Investors);
+            Assert.AreEqual(100 / 0.5, orderbook.OutOfTheMoneyOrders[1].Volume, Delta);
 
             Assert.AreEqual(OrderbookBidState.InMoney, orderbook.TryGetBid("client1").State);
             Assert.AreEqual(OrderbookBidState.InMoney, orderbook.TryGetBid("client2").State);
@@ -597,15 +600,15 @@ namespace DutchAuction.UnitTests
             Assert.AreEqual(1, orderbook.InMoneyOrders[2].Investors);
             Assert.AreEqual(100 / 0.9, orderbook.InMoneyOrders[2].Volume, Delta);
 
-            Assert.AreEqual(2, orderbook.OutOfMoneyOrders.Count);
+            Assert.AreEqual(2, orderbook.OutOfTheMoneyOrders.Count);
 
-            Assert.AreEqual(0.5, orderbook.OutOfMoneyOrders[0].Price, Delta);
-            Assert.AreEqual(2, orderbook.OutOfMoneyOrders[0].Investors);
-            Assert.AreEqual(750 / 0.9, orderbook.OutOfMoneyOrders[0].Volume, Delta);
+            Assert.AreEqual(0.5, orderbook.OutOfTheMoneyOrders[0].Price, Delta);
+            Assert.AreEqual(2, orderbook.OutOfTheMoneyOrders[0].Investors);
+            Assert.AreEqual(750 / 0.9, orderbook.OutOfTheMoneyOrders[0].Volume, Delta);
 
-            Assert.AreEqual(0.4, orderbook.OutOfMoneyOrders[1].Price, Delta);
-            Assert.AreEqual(1, orderbook.OutOfMoneyOrders[1].Investors);
-            Assert.AreEqual(100 / 0.9, orderbook.OutOfMoneyOrders[1].Volume, Delta);
+            Assert.AreEqual(0.4, orderbook.OutOfTheMoneyOrders[1].Price, Delta);
+            Assert.AreEqual(1, orderbook.OutOfTheMoneyOrders[1].Investors);
+            Assert.AreEqual(100 / 0.9, orderbook.OutOfTheMoneyOrders[1].Volume, Delta);
 
             Assert.AreEqual(OrderbookBidState.InMoney, orderbook.TryGetBid("client1").State);
             Assert.AreEqual(OrderbookBidState.InMoney, orderbook.TryGetBid("client2").State);

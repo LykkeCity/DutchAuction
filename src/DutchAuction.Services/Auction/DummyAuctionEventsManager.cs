@@ -8,6 +8,8 @@ namespace DutchAuction.Services.Auction
 {
     internal class DummyAuctionEventsManager : IAuctionEventsManager
     {
+        public int AuctionEventsPersistQueueLength { get; } = 0;
+
         public void Start()
         {
         }

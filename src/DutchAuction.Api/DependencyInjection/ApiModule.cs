@@ -9,7 +9,7 @@ using DutchAuction.Core.Services.Assets;
 using DutchAuction.Core.Services.Auction;
 using DutchAuction.Core.Services.MarketProfile;
 using DutchAuction.Repositories.Assets;
-using DutchAuction.Repositories.Lots;
+using DutchAuction.Repositories.AuctionEvents;
 using DutchAuction.Services.Assets;
 using DutchAuction.Services.Auction;
 using DutchAuction.Services.MarketProfile;

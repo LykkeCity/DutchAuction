@@ -14,6 +14,8 @@ namespace DutchAuction.Services.Auction
         IAuctionEventsManager,
         IDisposable
     {
+        public int AuctionEventsPersistQueueLength => _persistQueue.Count;
+
         private readonly IAuctionEventsRepository _repository;
         private readonly ConcurrentQueue<IAuctionEvent> _persistQueue;
         private readonly ILog _log;

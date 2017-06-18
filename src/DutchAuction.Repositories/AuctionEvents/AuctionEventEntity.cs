@@ -1,9 +1,8 @@
 using System;
-using System.Globalization;
 using DutchAuction.Core.Domain.Auction;
 using Microsoft.WindowsAzure.Storage.Table;
 
-namespace DutchAuction.Repositories.Lots
+namespace DutchAuction.Repositories.AuctionEvents
 {
     public class AuctionEventEntity : TableEntity, IAuctionEvent
     {
@@ -24,9 +23,22 @@ namespace DutchAuction.Repositories.Lots
             return clientId;
         }
 
-        public static string GenerateRowKey(DateTime date)
+        public static string GenerateRowKey(IAuctionEvent @event)
         {
-            return date.ToString("yyyy.MM.dd HH:mm:ss.fffffff", CultureInfo.InvariantCulture);
+            switch (@event.Type)
+            {
+                case AuctionEventType.StartBidding:
+                    return $"{@event.Date.Ticks:X32}";
+
+                case AuctionEventType.SetPrice:
+                    return $"{@event.Date.Ticks:X32}-{@event.Price:e}";
+
+                case AuctionEventType.SetAssetVolume:
+                    return $"{@event.Date.Ticks:X32}-{@event.AssetId}-{@event.Volume:e}";
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(@event.Type), @event.Type, string.Empty);
+            }           
         }
 
         public static AuctionEventEntity Create(IAuctionEvent src)
@@ -34,7 +46,7 @@ namespace DutchAuction.Repositories.Lots
             return new AuctionEventEntity
             {
                 PartitionKey = GeneratePartitionKey(src.ClientId),
-                RowKey = GenerateRowKey(src.Date),
+                RowKey = GenerateRowKey(src),
                 Type = src.Type,
                 AssetId = src.AssetId,
                 ClientId = src.ClientId,

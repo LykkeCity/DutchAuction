@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using DutchAuction.Core;
 using DutchAuction.Core.Domain.Auction;
@@ -28,6 +29,7 @@ namespace DutchAuction.Services.Auction
 
         public IOrderbook Render(IImmutableList<IClientBid> clientBids)
         {
+            var stopwatch = Stopwatch.StartNew();
             var context = new RenderContext();
             var priceLevels = GetPriceLevels(clientBids);
 
@@ -44,35 +46,39 @@ namespace DutchAuction.Services.Auction
             }
 
             var bidLkkVolumePriceLevels = CalculatePriceLevelBidLkkVolumes(priceLevels, context.LkkPriceChf);
+            var inMoneyOrders = bidLkkVolumePriceLevels
+                .Where(p => p.PriceLevel.PriceChf.IsApparentlyGreateOrEquals(context.LkkPriceChf))
+                .Select(p => CreateInMoneyOrder(p.BidLkkVolumeCalculations, p.PriceLevel.PriceChf,
+                    context.LkkPriceChf))
+                .ToImmutableArray();
+            var outOfTheMoneyOrders = bidLkkVolumePriceLevels
+                .Where(p => p.PriceLevel.PriceChf.IsApparentlyLessOrEquals(context.LkkPriceChf))
+                .Select(p => CreateOutOfTheMoneyOrder(p.BidLkkVolumeCalculations, p.PriceLevel.PriceChf,
+                    context.LkkPriceChf))
+                .ToImmutableArray();
+            var bids = bidLkkVolumePriceLevels
+                .SelectMany(p => p.BidLkkVolumeCalculations)
+                .ToImmutableDictionary(
+                    b => b.BidCalculation.ClientId,
+                    b => new OrderbookBid(
+                        b.BidCalculation.ClientId,
+                        b.BidCalculation.LimitPriceChf,
+                        context.LkkPriceChf,
+                        GetOrderbookBidState(b.BidCalculation.State),
+                        b.BidCalculation.AssetVolumes,
+                        b.AssetVolumesLkk,
+                        b.InMoneyAssetVolumesLkk));
+
+            stopwatch.Stop();
 
             return new Orderbook(
+                renderDuration: stopwatch.Elapsed,
                 lkkPriceChf: context.LkkPriceChf,
                 inMoneyVolumeLkk: context.AuctionInMoneyVolumeLkk,
                 outOfTheMoneyVolumeLkk: context.AuctionOutOfTheMoneyVolumeLkk,
-                inMoneyOrders: bidLkkVolumePriceLevels
-                    // TODO: Тут сравнивать уровни, а не значения цен, но не забыть про вычисляемый уровень
-                    .Where(p => p.PriceLevel.PriceChf.IsApparentlyGreateOrEquals(context.LkkPriceChf))
-                    .Select(p => CreateInMoneyOrder(p.BidLkkVolumeCalculations, p.PriceLevel.PriceChf,
-                        context.LkkPriceChf))
-                    .ToImmutableArray(),
-                outOfMoneyOrders: bidLkkVolumePriceLevels
-                    // TODO: Тут сравнивать уровни, а не значения цен, но не забыть про вычисляемый уровень
-                    .Where(p => p.PriceLevel.PriceChf.IsApparentlyLessOrEquals(context.LkkPriceChf))
-                    .Select(p => CreateOutOfTheMoneyOrder(p.BidLkkVolumeCalculations, p.PriceLevel.PriceChf,
-                        context.LkkPriceChf))
-                    .ToImmutableArray(),
-                bids: bidLkkVolumePriceLevels
-                    .SelectMany(p => p.BidLkkVolumeCalculations)
-                    .ToImmutableDictionary(
-                        b => b.BidCalculation.ClientId,
-                        b => new OrderbookBid(
-                            b.BidCalculation.ClientId,
-                            b.BidCalculation.LimitPriceChf,
-                            context.LkkPriceChf,
-                            GetOrderbookBidState(b.BidCalculation.State),
-                            b.BidCalculation.AssetVolumes,
-                            b.AssetVolumesLkk,
-                            b.InMoneyAssetVolumesLkk))
+                inMoneyOrders: inMoneyOrders,
+                outOfTheMoneyOrders: outOfTheMoneyOrders,
+                bids: bids
             );
         }
 

@@ -1,10 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using AzureStorage;
 using DutchAuction.Core.Domain.Auction;
+using Microsoft.WindowsAzure.Storage;
 
-namespace DutchAuction.Repositories.Lots
+namespace DutchAuction.Repositories.AuctionEvents
 {
     public class AuctionEventsRepository : IAuctionEventsRepository
     {
@@ -18,7 +20,6 @@ namespace DutchAuction.Repositories.Lots
         public async Task AddAsync(IAuctionEvent auctionEvent)
         {
             var entity = AuctionEventEntity.Create(auctionEvent);
-
             await _tableStorage.InsertAsync(entity);
         }
 

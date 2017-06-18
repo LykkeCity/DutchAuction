@@ -9,5 +9,6 @@ namespace DutchAuction.Core.Services.Auction
     {
         void Add(IAuctionEvent auctionEvent);
         Task<IEnumerable<IAuctionEvent>> GetAllAsync();
+        int AuctionEventsPersistQueueLength { get; }
     }
 }
