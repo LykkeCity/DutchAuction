@@ -1,15 +1,14 @@
 ﻿using System;
-using System.IO;
-using System.Net.Http;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using AzureStorage.Tables;
 using Common.Log;
 using DutchAuction.Api.DependencyInjection;
-using DutchAuction.Api.Middleware;
-using DutchAuction.Api.Swagger;
+using DutchAuction.Api.Models;
 using DutchAuction.Core;
 using Lykke.AzureQueueIntegration;
+using Lykke.Common.ApiLibrary.Middleware;
+using Lykke.Common.ApiLibrary.Swagger;
 using Lykke.Logs;
 using Lykke.SettingsReader;
 using Lykke.SlackNotification.AzureQueue;
@@ -18,9 +17,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.PlatformAbstractions;
 using Newtonsoft.Json.Converters;
-using Swashbuckle.Swagger.Model;
 
 namespace DutchAuction.Api
 {
@@ -57,23 +54,10 @@ namespace DutchAuction.Api
 
             services.AddSwaggerGen(options =>
             {
-                options.SingleApiVersion(new Info
-                {
-                    Version = "v1",
-                    Title = "Dutch Auction API"
-                });
-                options.DescribeAllEnumsAsStrings();
-                options.EnableXmsEnumExtension();
-
-                //Determine base path for the application.
-                var basePath = PlatformServices.Default.Application.ApplicationBasePath;
-
-                //Set the comments path for the swagger json and ui.
-                var xmlPath = Path.Combine(basePath, "DutchAuction.Api.xml");
-                options.IncludeXmlComments(xmlPath);
+                options.DefaultLykkeConfiguration("v1", "Dutch Auction API");
             });
 
-            var settings = LoadSettings();
+            var settings = HttpSettingsLoader.Load<ApplicationSettings>();
             var appSettings = settings.DutchAuction;
 
             var slackService = services.UseSlackNotificationsSenderViaAzureQueue(new AzureQueueSettings
@@ -105,31 +89,11 @@ namespace DutchAuction.Api
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
             loggerFactory.AddDebug();
 
-            app.UseMiddleware<GlobalErrorHandlerMiddleware>();
+            app.UseLykkeMiddleware(Constants.ComponentName, () => ErrorResponse.Create("Technical problems"));
 
             app.UseMvc();
             app.UseSwagger();
             app.UseSwaggerUi();
-        }
-
-        private static ApplicationSettings LoadSettings()
-        {
-            var settingsUrl = Environment.GetEnvironmentVariable("SettingsUrl");
-
-            if (string.IsNullOrEmpty(settingsUrl))
-            {
-                throw new Exception("Environment variable 'SettingsUrl' is not defined");
-            }
-
-            using (var httpClient = new HttpClient())
-            {
-                using (var response = httpClient.GetAsync(settingsUrl).Result)
-                {
-                    var settingsData = response.Content.ReadAsStringAsync().Result;
-
-                    return SettingsProcessor.Process<ApplicationSettings>(settingsData);
-                }
-            }
         }
     }
 }
