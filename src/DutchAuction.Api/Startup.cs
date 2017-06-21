@@ -43,8 +43,6 @@ namespace DutchAuction.Api
         // This method gets called by the runtime. Use this method to add services to the container.
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
-            ILog log = new LogToConsole();
-
             services.AddMvc()
                 .AddJsonOptions(options =>
                 {
@@ -59,20 +57,7 @@ namespace DutchAuction.Api
 
             var settings = HttpSettingsLoader.Load<ApplicationSettings>();
             var appSettings = settings.DutchAuction;
-
-            var slackService = services.UseSlackNotificationsSenderViaAzureQueue(new AzureQueueSettings
-            {
-                ConnectionString = settings.SlackNotifications.AzureQueue.ConnectionString,
-                QueueName = settings.SlackNotifications.AzureQueue.QueueName
-            }, log);
-
-            if (!string.IsNullOrEmpty(appSettings.Db.LogsConnectionString) &&
-                !(appSettings.Db.LogsConnectionString.StartsWith("${") && appSettings.Db.LogsConnectionString.EndsWith("}")))
-            {
-                log = new LykkeLogToAzureStorage("Lykke.DutchAuction", new AzureTableStorage<LogEntity>(
-                    appSettings.Db.LogsConnectionString, "DutchAuctionLogs", log), slackService);
-            }
-
+            var log = CreateLog(services, settings);
             var builder = new ContainerBuilder();
             
             builder.RegisterModule(new ApiModule(appSettings, log));
@@ -81,6 +66,37 @@ namespace DutchAuction.Api
             ApplicationContainer = builder.Build();
 
             return new AutofacServiceProvider(ApplicationContainer);
+        }
+
+        private static ILog CreateLog(IServiceCollection services, ApplicationSettings settings)
+        {
+            var appSettings = settings.DutchAuction;
+
+            LykkeLogToAzureStorage logToAzureStorage = null;
+            var logToConsole = new LogToConsole();
+            var logAggregate = new LogAggregate();
+
+            logAggregate.AddLogger(logToConsole);
+
+            if (!string.IsNullOrEmpty(appSettings.Db.LogsConnectionString) &&
+                !(appSettings.Db.LogsConnectionString.StartsWith("${") && appSettings.Db.LogsConnectionString.EndsWith("}")))
+            {
+                logToAzureStorage = new LykkeLogToAzureStorage("Lykke.DutchAuction", new AzureTableStorage<LogEntity>(
+                    appSettings.Db.LogsConnectionString, "DutchAuctionLogs", logToConsole));
+
+                logAggregate.AddLogger(logToAzureStorage);
+            }
+
+            var log = logAggregate.CreateLogger();
+
+            var slackService = services.UseSlackNotificationsSenderViaAzureQueue(new AzureQueueSettings
+            {
+                ConnectionString = settings.SlackNotifications.AzureQueue.ConnectionString,
+                QueueName = settings.SlackNotifications.AzureQueue.QueueName
+            }, log);
+
+            logToAzureStorage?.SetSlackNotification(slackService);
+            return log;
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
