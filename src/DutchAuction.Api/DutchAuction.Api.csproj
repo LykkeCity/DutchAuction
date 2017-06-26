@@ -26,6 +26,7 @@
   <ItemGroup>
     <PackageReference Include="Lykke.Common.ApiLibrary" Version="1.0.3" />
     <PackageReference Include="Lykke.Logs" Version="1.0.14" />
+    <PackageReference Include="Lykke.Service.Assets.Client" Version="1.0.14" />
     <PackageReference Include="Lykke.SettingsReader" Version="1.0.37" />
     <PackageReference Include="Lykke.SlackNotification.AzureQueue" Version="1.0.4" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.0.1" />

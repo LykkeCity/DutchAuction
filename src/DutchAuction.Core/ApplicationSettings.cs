@@ -22,7 +22,6 @@ namespace DutchAuction.Core
         public class DatabaseSettings
         {
             public string DataConnectionString { get; set; }
-            public string DictionariesConnectionString { get; set; }
             public string LogsConnectionString { get; set; }
         }
 
@@ -34,7 +33,8 @@ namespace DutchAuction.Core
 
         public class DictionariesSettings
         {
-            public TimeSpan CacheUpdatePeriod { get; set; }
+            public string AssetsServiceUrl { get; set; }
+            public TimeSpan CacheExpirationPeriod { get; set; }
         }
 
         public class SlackNotificationsSettings

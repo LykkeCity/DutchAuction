@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using DutchAuction.Core.Domain.Auction;
 
 namespace DutchAuction.Api.Models
 {

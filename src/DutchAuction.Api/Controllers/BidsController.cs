@@ -27,7 +27,7 @@ namespace DutchAuction.Api.Controllers
         }
 
 #if DEBUG
-        [HttpPost("/testData/{bidsCount:int}")]
+        [HttpPost("testData/{bidsCount:int}")]
         public IActionResult GenerateTestBids(int bidsCount)
         {
             if (_auctionManager.GetOrderbook().BidsCount != 0)

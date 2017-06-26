@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Threading.Tasks;
 using DutchAuction.Core.Services.Assets;
 
 namespace DutchAuction.Services.Auction.OrderbookRendering
@@ -25,7 +26,10 @@ namespace DutchAuction.Services.Auction.OrderbookRendering
             AssetVolumes = assetVolumes;
 
             // Convert volume to CHF
-            VolumeChf = AssetVolumes.Sum(a => assetExchangeService.Exchange(a.Value, a.Key, "CHF"));
+            VolumeChf = Task
+                .WhenAll(AssetVolumes.Select(async a => await assetExchangeService.ExchangeAsync(a.Value, a.Key, "CHF")))
+                .Result
+                .Sum(amount => amount);
 
             State = BidCalculationState.NotCalculatedYet;
         }

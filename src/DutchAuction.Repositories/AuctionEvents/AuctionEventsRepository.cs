@@ -1,10 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
 using AzureStorage;
 using DutchAuction.Core.Domain.Auction;
-using Microsoft.WindowsAzure.Storage;
 
 namespace DutchAuction.Repositories.AuctionEvents
 {

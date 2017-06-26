@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
+﻿using System.Collections.Immutable;
 using System.Linq;
+using System.Threading.Tasks;
 using DutchAuction.Core.Domain.Auction;
 using DutchAuction.Core.Services.Assets;
 using DutchAuction.Services.Auction;
@@ -25,8 +23,8 @@ namespace DutchAuction.UnitTests
             _assetExchangeServiceMock = new Mock<IAssetExchangeService>();
             
             _assetExchangeServiceMock
-                .Setup(s => s.Exchange(It.IsAny<double>(), It.IsAny<string>(), It.IsAny<string>()))
-                .Returns<double, string, string>((amount, baseAssetId, targetAssetId) => amount);
+                .Setup(s => s.ExchangeAsync(It.IsAny<double>(), It.IsAny<string>(), It.IsAny<string>()))
+                .Returns<double, string, string>((amount, baseAssetId, targetAssetId) => Task.FromResult(amount));
            
             _orderbookService = new OrderbookService(_assetExchangeServiceMock.Object, 
                 totalAuctionVolumeLkk: 5000, 
@@ -38,8 +36,8 @@ namespace DutchAuction.UnitTests
         {
             // Arrange
             _assetExchangeServiceMock
-                .Setup(s => s.Exchange(It.IsAny<double>(), It.IsAny<string>(), It.IsAny<string>()))
-                .Returns<double, string, string>((amount, baseAssetId, targetAssetId) => amount);
+                .Setup(s => s.ExchangeAsync(It.IsAny<double>(), It.IsAny<string>(), It.IsAny<string>()))
+                .Returns<double, string, string>((amount, baseAssetId, targetAssetId) => Task.FromResult(amount));
 
             var clientBids = new IClientBid[]
             {
@@ -60,8 +58,8 @@ namespace DutchAuction.UnitTests
         {
             // Asset
             _assetExchangeServiceMock
-                .Setup(s => s.Exchange(It.IsAny<double>(), It.IsAny<string>(), It.IsAny<string>()))
-                .Returns<double, string, string>((amount, baseAssetId, targetAssetId) => amount);
+                .Setup(s => s.ExchangeAsync(It.IsAny<double>(), It.IsAny<string>(), It.IsAny<string>()))
+                .Returns<double, string, string>((amount, baseAssetId, targetAssetId) => Task.FromResult(amount));
 
             var clientBids = new IClientBid[]
             {
@@ -129,8 +127,8 @@ namespace DutchAuction.UnitTests
         {
             // Asset
             _assetExchangeServiceMock
-                .Setup(s => s.Exchange(It.IsAny<double>(), It.IsAny<string>(), It.IsAny<string>()))
-                .Returns<double, string, string>((amount, baseAssetId, targetAssetId) => amount);
+                .Setup(s => s.ExchangeAsync(It.IsAny<double>(), It.IsAny<string>(), It.IsAny<string>()))
+                .Returns<double, string, string>((amount, baseAssetId, targetAssetId) => Task.FromResult(amount));
 
             var clientBids = new IClientBid[]
             {

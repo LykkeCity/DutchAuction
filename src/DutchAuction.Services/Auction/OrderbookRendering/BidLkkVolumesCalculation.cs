@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Threading.Tasks;
 using DutchAuction.Core.Services.Assets;
 
 namespace DutchAuction.Services.Auction.OrderbookRendering
@@ -16,9 +17,11 @@ namespace DutchAuction.Services.Auction.OrderbookRendering
         {
             BidCalculation = bidCalculation;
 
-            AssetVolumesLkk = bidCalculation
-                .AssetVolumes
-                .Select(item => new KeyValuePair<string, double>(item.Key, assetExchangeService.Exchange(item.Value, item.Key, "CHF") / lkkPriceChf))
+            AssetVolumesLkk = Task
+                .WhenAll(bidCalculation
+                    .AssetVolumes
+                    .Select(async item => new KeyValuePair<string, double>(item.Key, await assetExchangeService.ExchangeAsync(item.Value, item.Key, "CHF") / lkkPriceChf)))
+                .Result
                 .ToImmutableArray();
 
             if (bidCalculation.State == BidCalculationState.InMoney)
@@ -35,10 +38,11 @@ namespace DutchAuction.Services.Auction.OrderbookRendering
             else if (bidCalculation.State == BidCalculationState.PartiallyInMoney)
             {
 
-                InMoneyAssetVolumesLkk = bidCalculation
-                    .InMoneyAssetVolumes
-                    .Select(item => new KeyValuePair<string, double>(item.Key,
-                        assetExchangeService.Exchange(item.Value, item.Key, "CHF") / lkkPriceChf))
+                InMoneyAssetVolumesLkk = Task
+                    .WhenAll(bidCalculation
+                        .InMoneyAssetVolumes
+                        .Select(async item => new KeyValuePair<string, double>(item.Key, await assetExchangeService.ExchangeAsync(item.Value, item.Key, "CHF") / lkkPriceChf)))
+                    .Result
                     .ToImmutableArray();
             }
             else

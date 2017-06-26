@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using DutchAuction.Core.Services.Assets;
 using DutchAuction.Core.Services.MarketProfile;
 
@@ -17,7 +18,7 @@ namespace DutchAuction.Services.Assets
             _assetPairsManager = assetPairsManager;
         }
 
-        public double Exchange(double baseAmount, string baseAssetId, string targetAssetId)
+        public async Task<double> ExchangeAsync(double baseAmount, string baseAssetId, string targetAssetId)
         {
             if (baseAssetId == targetAssetId)
             {
@@ -28,7 +29,7 @@ namespace DutchAuction.Services.Assets
 
             if (directPair != null)
             {
-                var assetPair = _assetPairsManager.GetEnabledPair(directPair.AssetPair);
+                var assetPair = await _assetPairsManager.GetEnabledPairAsync(directPair.AssetPair);
 
                 return Math.Round(baseAmount * directPair.BidPrice, assetPair.Accuracy);
             }
@@ -37,7 +38,7 @@ namespace DutchAuction.Services.Assets
 
             if (invertedPair != null)
             {
-                var assetPair = _assetPairsManager.GetEnabledPair(invertedPair.AssetPair);
+                var assetPair = await _assetPairsManager.GetEnabledPairAsync(invertedPair.AssetPair);
 
                 return Math.Round(baseAmount / invertedPair.AskPrice, assetPair.InvertedAccuracy);
             }

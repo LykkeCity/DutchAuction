@@ -1,10 +1,10 @@
-using Autofac;
-using DutchAuction.Core.Domain.Asset;
+using System.Threading.Tasks;
+using Lykke.Service.Assets.Client.Custom;
 
 namespace DutchAuction.Core.Services.Assets
 {
-    public interface IAssetPairsManager : IStartable
+    public interface IAssetPairsManager
     {
-        IAssetPair GetEnabledPair(string assetPairId);
+        Task<IAssetPair> GetEnabledPairAsync(string assetPairId);
     }
 }

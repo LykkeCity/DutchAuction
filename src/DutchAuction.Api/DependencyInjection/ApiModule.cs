@@ -1,19 +1,20 @@
 ﻿using System;
 using Autofac;
+using Autofac.Extensions.DependencyInjection;
 using AzureStorage.Tables;
 using Common.Log;
 using DutchAuction.Core;
-using DutchAuction.Core.Domain.Asset;
 using DutchAuction.Core.Domain.Auction;
 using DutchAuction.Core.Services.Assets;
 using DutchAuction.Core.Services.Auction;
 using DutchAuction.Core.Services.MarketProfile;
-using DutchAuction.Repositories.Assets;
 using DutchAuction.Repositories.AuctionEvents;
 using DutchAuction.Services.Assets;
 using DutchAuction.Services.Auction;
 using DutchAuction.Services.MarketProfile;
 using Lykke.MarketProfileService.Client;
+using Lykke.Service.Assets.Client.Custom;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DutchAuction.Api.DependencyInjection
 {
@@ -21,11 +22,13 @@ namespace DutchAuction.Api.DependencyInjection
     {
         private readonly ApplicationSettings.DutchAuctionSettings _settings;
         private readonly ILog _log;
+        private IServiceCollection _services;
 
         public ApiModule(ApplicationSettings.DutchAuctionSettings settings, ILog log)
         {
             _settings = settings;
             _log = log;
+            _services = new ServiceCollection();
         }
 
         protected override void Load(ContainerBuilder builder)
@@ -39,6 +42,8 @@ namespace DutchAuction.Api.DependencyInjection
             RegisterAssets(builder);
 
             RegisterMarketProfile(builder);
+
+            builder.Populate(_services);
         }
 
         private void RegisterAuction(ContainerBuilder builder)
@@ -85,20 +90,9 @@ namespace DutchAuction.Api.DependencyInjection
 
         private void RegisterAssets(ContainerBuilder builder)
         {
-            builder
-                .Register<IAssetPairsRepository>(
-                    ctx => new AssetPairsRepository(
-                        new AzureTableStorage<AssetPairEntity>(_settings.Db.DictionariesConnectionString,
-                            "Dictionaries", null)))
-                .SingleInstance();
+            _services.UseAssetsClient(AssetServiceSettings.Create(new Uri(_settings.Dictionaries.AssetsServiceUrl), _settings.Dictionaries.CacheExpirationPeriod));
 
-            builder.Register(x => new AssetPairsManager(
-                    x.Resolve<IAssetPairsRepository>(),
-                    new AssetPairsCacheService(),
-                    _settings.Dictionaries.CacheUpdatePeriod, _log))
-                .As<IAssetPairsManager>()
-                .As<IStartable>()
-                .SingleInstance();
+            builder.RegisterType<AssetPairsManager>().As<IAssetPairsManager>().SingleInstance();
 
             builder.RegisterType<AssetExchangeService>().As<IAssetExchangeService>();
         }
