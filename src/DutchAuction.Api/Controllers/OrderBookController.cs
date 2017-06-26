@@ -4,6 +4,7 @@ using DutchAuction.Api.Models;
 using DutchAuction.Core.Domain.Auction;
 using DutchAuction.Core.Services.Auction;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.SwaggerGen.Annotations;
 
 namespace DutchAuction.Api.Controllers
 {
@@ -24,8 +25,8 @@ namespace DutchAuction.Api.Controllers
         /// Get order book
         /// </summary>
         /// <returns></returns>
-        [HttpGet]
-        [Route("")]
+        [HttpGet("")]
+        [SwaggerOperation("GetOrderbook")]
         [ProducesResponseType(typeof(OrderbookResponse), (int)HttpStatusCode.OK)]
         public OrderbookResponse Get()
         {

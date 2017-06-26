@@ -5,6 +5,7 @@ using DutchAuction.Core;
 using DutchAuction.Core.Domain.Auction;
 using DutchAuction.Core.Services.Auction;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.SwaggerGen.Annotations;
 
 namespace DutchAuction.Api.Controllers
 {
@@ -63,6 +64,7 @@ namespace DutchAuction.Api.Controllers
 #endif
 
         [HttpGet("{clientId}")]
+        [SwaggerOperation("GetBid")]
         [ProducesResponseType(typeof(BidResponse), (int)HttpStatusCode.OK)]
         [ProducesResponseType(typeof(ErrorResponse), (int)HttpStatusCode.BadRequest)]
         [ProducesResponseType(typeof(ErrorResponse), (int)HttpStatusCode.NotFound)]
@@ -97,6 +99,7 @@ namespace DutchAuction.Api.Controllers
         /// <param name="model">Model</param>
         /// <returns></returns>
         [HttpPost("")]
+        [SwaggerOperation("StartBidding")]
         [ProducesResponseType(typeof(AuctionOperationResponse), (int)HttpStatusCode.OK)]
         [ProducesResponseType(typeof(ErrorResponse), (int)HttpStatusCode.BadRequest)]
         public IActionResult StartBidding([FromBody]StartBiddingModel model)
@@ -119,6 +122,7 @@ namespace DutchAuction.Api.Controllers
         /// <param name="model">Model</param>
         /// <returns></returns>
         [HttpPut("price")]
+        [SwaggerOperation("SetBidPrice")]
         [ProducesResponseType(typeof(AuctionOperationResponse), (int)HttpStatusCode.OK)]
         [ProducesResponseType(typeof(ErrorResponse), (int)HttpStatusCode.BadRequest)]
         public IActionResult SetPrice([FromBody]SetPriceModel model)
@@ -141,6 +145,7 @@ namespace DutchAuction.Api.Controllers
         /// <param name="model">Model</param>
         /// <returns></returns>
         [HttpPut("volume")]
+        [SwaggerOperation("SetBidAssetVolume")]
         [ProducesResponseType(typeof(AuctionOperationResponse), (int)HttpStatusCode.OK)]
         [ProducesResponseType(typeof(ErrorResponse), (int)HttpStatusCode.BadRequest)]
         public IActionResult SetVolume([FromBody]SetVolumeModel model)
